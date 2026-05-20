@@ -276,6 +276,21 @@ img{display:block;}
 .upill:active{background:var(--bg4);}
 .upillav{width:28px;height:28px;border-radius:50%;background:var(--tc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tc-dark);}
 .upillname{font-size:12px;color:var(--text2);}
+/* TOP 5 */
+.t5row{display:flex;gap:8px;justify-content:space-between;}
+.t5slot{flex:1;aspect-ratio:2/3;border-radius:10px;background:var(--bg3);border:1px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:transform 0.15s,border-color 0.2s;}
+.t5slot:active{transform:scale(0.94);}
+.t5slot.filled{border:none;background:none;}
+.t5slot.filled:hover{transform:translateY(-3px);}
+.t5slot img{width:100%;height:100%;object-fit:cover;display:block;}
+.t5plus{font-size:22px;color:var(--text3);font-weight:300;}
+.t5rank{position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;font-weight:700;border-radius:5px;padding:1px 5px;z-index:2;}
+.t5remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center;z-index:2;}
+.t5slot.filled:hover .t5remove{display:flex;}
+/* Friend banner top 5 mini */
+.t5mini{display:flex;gap:5px;margin-top:8px;}
+.t5mini-item{width:30px;height:45px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,0.08);flex-shrink:0;}
+.t5mini-item img{width:100%;height:100%;object-fit:cover;}
 
 /* NOTIFICATION BADGE */
 .nbadge{position:absolute;top:-2px;right:-2px;background:#e24b4a;border-radius:50%;width:8px;height:8px;}
@@ -444,6 +459,19 @@ img{display:block;}
     <div class="mhandle"></div>
     <button onclick="closeM('friendProfileMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
     <div id="friendProfileContent"><div class="lmsg"><div class="spin"></div>Loading...</div></div>
+  </div>
+</div>
+
+<!-- TOP 5 PICKER MODAL -->
+<div class="mov" id="top5Mov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <button onclick="closeM('top5Mov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle">Add to your top 5</div>
+    <div class="msub">Search for a book to add to your favourites</div>
+    <input type="hidden" id="top5PickerIdx" value="0"/>
+    <div class="sib" style="margin-bottom:12px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="top5SearchIn" placeholder="Search any book..." oninput="onTop5Search(this.value)" autocomplete="off"/></div>
+    <div id="top5Results"></div>
   </div>
 </div>
 
@@ -662,7 +690,7 @@ const GENRE_BOOKS={
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
-let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={};
+let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[];
 
 // HELPERS
 const olc=(isbn,s)=>{
@@ -699,6 +727,7 @@ onAuthStateChanged(auth,async u=>{
   if(u){
     await setDoc(doc(db,'users',u.uid),{uid:u.uid,name:u.displayName||u.email.split('@')[0],email:u.email,nameLower:(u.displayName||u.email.split('@')[0]).toLowerCase(),updatedAt:serverTimestamp()},{merge:true});
     loadWL();
+    loadTop5();
     checkFriendReqs();
     if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
   }
@@ -768,6 +797,74 @@ async function loadWL(){
   try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',CU.uid)));wl=s.docs.map(d=>d.data());}catch(e){}
   updWLBtn();
 }
+
+// ── TOP 5 FAVOURITES ──
+async function loadTop5(){
+  if(!CU)return;
+  try{
+    const snap=await getDoc(doc(db,'top5',CU.uid));
+    top5=snap.exists()?(snap.data().books||[]):[];
+  }catch(e){top5=[];}
+}
+
+async function saveTop5(){
+  if(!CU)return;
+  try{await setDoc(doc(db,'top5',CU.uid),{userId:CU.uid,books:top5,updatedAt:serverTimestamp()});}catch(e){console.error('Save top5 error',e);}
+}
+
+window.openTop5Picker=slotIdx=>{
+  if(!CU){openAuth();return;}
+  document.getElementById('top5PickerIdx').value=slotIdx;
+  document.getElementById('top5SearchIn').value='';
+  document.getElementById('top5Results').innerHTML='<div style="text-align:center;padding:24px 0;font-size:13px;color:var(--text3);">Search for a book to add</div>';
+  document.getElementById('top5Mov').classList.add('open');
+  setTimeout(()=>document.getElementById('top5SearchIn').focus(),300);
+};
+
+let top5SearchT=null;
+window.onTop5Search=val=>{
+  clearTimeout(top5SearchT);
+  const el=document.getElementById('top5Results');
+  if(val.length<2){el.innerHTML='<div style="text-align:center;padding:24px 0;font-size:13px;color:var(--text3);">Search for a book to add</div>';return;}
+  el.innerHTML='<div class="lmsg" style="padding:20px 0;"><div class="spin"></div>Searching...</div>';
+  top5SearchT=setTimeout(()=>{
+    fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(val)}&maxResults=10&langRestrict=en`)
+      .then(r=>r.json()).then(d=>{
+        const items=d.items||[];
+        if(!items.length){el.innerHTML='<div style="text-align:center;padding:20px 0;font-size:13px;color:var(--text3);">No books found</div>';return;}
+        el.innerHTML=items.map((item,i)=>{
+          const info=item.volumeInfo||{};
+          const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+          let cover=isbn?olc(isbn.identifier,'M'):'';
+          if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
+          const book={title:info.title||'Unknown',author:(info.authors||[''])[0],isbn:isbn?isbn.identifier:'',cover};
+          const key='t5_'+i+'_'+Date.now();_bookStore[key]=book;
+          return`<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;" onclick="addToTop5('${key}')">${cover?`<img src="${cover}" style="width:38px;height:57px;border-radius:5px;object-fit:cover;">`:'<div style="width:38px;height:57px;border-radius:5px;background:var(--bg3);"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(book.title)}</div><div style="font-size:11px;color:var(--text3);">${esc(book.author)}</div></div><div style="font-size:18px;color:var(--tc);">+</div></div>`;
+        }).join('');
+      }).catch(()=>{el.innerHTML='<div style="text-align:center;padding:20px 0;font-size:13px;color:var(--text3);">Search failed</div>';});
+  },350);
+};
+
+window.addToTop5=async key=>{
+  const book=_bookStore[key];
+  if(!book)return;
+  const idx=parseInt(document.getElementById('top5PickerIdx').value);
+  // Make sure top5 array has enough slots
+  while(top5.length<=idx)top5.push(null);
+  top5[idx]=book;
+  await saveTop5();
+  closeM('top5Mov');
+  showToast('Added to your top 5!');
+  renderProfile();
+};
+
+window.removeFromTop5=async idx=>{
+  if(!confirm('Remove from your top 5?'))return;
+  top5.splice(idx,1);
+  await saveTop5();
+  showToast('Removed');
+  renderProfile();
+};
 const inWL=b=>wl.some(w=>w.bookId===bid(b));
 function updWLBtn(){
   const btn=document.getElementById('wlTopBtn');if(!btn||!currentBook)return;
@@ -1198,7 +1295,8 @@ async function renderFriends(){
       let myRecentHtml='';
       if(!myRecentRating.empty){const r=myRecentRating.docs[0].data();myRecentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
       else{myRecentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Rate your first book to share with friends</div>`;}
-      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname">${esc(myName)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div></div></div></div>`;
+      const myT5Html=top5.length>0?`<div class="t5mini">${top5.slice(0,5).map(b=>b&&b.cover?`<div class="t5mini-item"><img src="${b.cover}" alt=""></div>`:'').join('')}</div>`:'';
+      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname">${esc(myName)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div>${myT5Html}</div></div></div>`;
     }catch(e){}
 
     // Pending requests section
@@ -1222,16 +1320,19 @@ async function renderFriends(){
           const fsnap=await getDoc(doc(db,'users',fid));
           if(!fsnap.exists())continue;
           const fd=fsnap.data();
-          // Get their recent rating
           const _fsnap=await getDocs(query(collection(db,'ratings'),where('userId','==',fid)));
           const rc=_fsnap;
           const _fpub=_fsnap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
           const rsnap={empty:_fpub.length===0,docs:_fpub.map(r=>({data:()=>r}))};
+          // Fetch friend's top 5
+          let friendT5=[];
+          try{const t5snap=await getDoc(doc(db,'top5',fid));if(t5snap.exists())friendT5=t5snap.data().books||[];}catch(e){}
+          const friendT5Html=friendT5.length>0?`<div class="t5mini">${friendT5.slice(0,5).map(b=>b&&b.cover?`<div class="t5mini-item"><img src="${b.cover}" alt=""></div>`:'').join('')}</div>`:'';
           const c=avc(fd.name.charCodeAt(0));
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
           _bookStore['friend_'+fid]={uid:fid,name:fd.name,ratingCount:rc.size,c};
-          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div></div></div>`;
+          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div>${friendT5Html}</div></div>`;
         }catch(e){}
       }
     }
@@ -1328,10 +1429,25 @@ async function renderProfile(){
   ];
   const achH=achs.map(a=>`<div class="achcard${a.ok?'':' locked'}" onclick="openAch('${a.ic}','${a.n}','${a.d}','${a.c}','${a.l}')"><div class="achcard-icon">${a.ic}</div><div class="achcard-name">${a.n}</div><span class="rarity ${a.c}">${a.l}</span></div>`).join('');
   const wlH=wl.length===0?`<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>`:wl.map(w=>`<div class="wlitem" onclick='openBook({title:"${esc(w.title)}",authors:${JSON.stringify(w.authors||[])},rating:0,ratingCount:"",cover:"${w.cover||''}",description:"",categories:[],publishedDate:"",isbn:"${w.isbn||''}",previewLink:""})'>${w.cover?`<img class="wlcov" src="${w.cover}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')" alt="">`:'<div class="wlcov"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(w.title)}</div><div style="font-size:11px;color:var(--text3);">${esc((w.authors||[]).join(', '))}</div></div><button class="wlrm" onclick="event.stopPropagation();removeWL('${w.bookId}')">&#x2715;</button></div>`).join('');
+  // Build Top 5 HTML using safe string concat (no nested template literals)
+  let t5Html="<div style=\"padding:18px;border-bottom:0.5px solid var(--border);\" class=\"anim-fade-up\"><div class=\"stitle\" style=\"padding:0;margin-bottom:12px;\">Top 5 favourite books</div><div class=\"t5row\">";
+  for(let i=0;i<5;i++){
+    const b=top5[i];
+    if(b){
+      const key='ot5_'+i+'_'+Date.now();
+      _bookStore[key]={title:b.title,authors:[b.author||''],author:b.author||'',isbn:b.isbn||'',cover:b.cover||'',description:'',categories:[],publishedDate:'',previewLink:''};
+      const imgHtml=b.cover?('<img src="'+b.cover+'" alt="">'):('<div style="background:'+grad(b.title)+';width:100%;height:100%;"></div>');
+      t5Html+="<div class=\"t5slot filled\" onclick=\"_ob('"+key+"')\"><div class=\"t5rank\">#"+(i+1)+"</div><button class=\"t5remove\" onclick=\"event.stopPropagation();removeFromTop5("+i+")\">&times;</button>"+imgHtml+"</div>";
+    }else{
+      t5Html+="<div class=\"t5slot\" onclick=\"openTop5Picker("+i+")\"><div class=\"t5plus\">+</div></div>";
+    }
+  }
+  t5Html+="</div></div>";
   const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
   el.innerHTML=
     `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
+    t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Wishlist (${wl.length})</div>${wlH}</div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Recently rated</div>${recH}</div>`+
