@@ -618,21 +618,63 @@ window.setPriv=m=>{
 };
 window.doSave=async()=>{
   if(!curRating){showToast('Please tap a star first');return;}
+  if(!CU){showToast('Not signed in - please sign in first');openAuth();return;}
+  if(!currentBook){showToast('No book selected');return;}
   const btn=document.getElementById('saveBtn');btn.textContent='Saving...';btn.disabled=true;
+  // Add visible error display under the button
+  let errEl=document.getElementById('saveErr');
+  if(!errEl){errEl=document.createElement('div');errEl.id='saveErr';errEl.style.cssText='font-size:11px;color:#e24b4a;text-align:center;margin-top:10px;line-height:1.4;word-break:break-word;';btn.parentNode.insertBefore(errEl,btn.nextSibling);}
+  errEl.textContent='';
   try{
     const id=bid(currentBook);
     const rev=document.getElementById('revTxt').value.trim();
-    await setDoc(doc(db,'ratings',CU.uid+'_'+id),{userId:CU.uid,userName:CU.displayName||'Anonymous',userNameLower:(CU.displayName||'anon').toLowerCase(),bookId:id,bookTitle:currentBook.title,bookCover:currentBook.cover||'',bookIsbn:currentBook.isbn||'',rating:curRating,review:rev,privacy:curPriv,timestamp:serverTimestamp()});
+    const ratingData={
+      userId:CU.uid,
+      userName:CU.displayName||CU.email.split('@')[0]||'Anonymous',
+      userNameLower:(CU.displayName||CU.email||'anon').toLowerCase(),
+      bookId:id,
+      bookTitle:currentBook.title||'Unknown',
+      bookCover:currentBook.cover||'',
+      bookIsbn:currentBook.isbn||'',
+      rating:curRating,
+      review:rev,
+      privacy:curPriv,
+      timestamp:serverTimestamp()
+    };
+    console.log('Saving rating:',ratingData);
+    await setDoc(doc(db,'ratings',CU.uid+'_'+id),ratingData);
+    console.log('Rating saved successfully');
     // update aggregate
-    const br=doc(db,'books',id);
-    const bs=await getDoc(br);
-    if(bs.exists()){const d=bs.data();const nc=d.ratingCount+1,nt=d.ratingTotal+curRating;await updateDoc(br,{ratingCount:nc,ratingTotal:nt,avgRating:Math.round(nt/nc*10)/10});}
-    else{await setDoc(br,{title:currentBook.title,authors:currentBook.authors||[],cover:currentBook.cover||'',isbn:currentBook.isbn||id,ratingCount:1,ratingTotal:curRating,avgRating:curRating});}
+    try{
+      const br=doc(db,'books',id);
+      const bs=await getDoc(br);
+      if(bs.exists()){
+        const d=bs.data();
+        const nc=(d.ratingCount||0)+1,nt=(d.ratingTotal||0)+curRating;
+        await updateDoc(br,{ratingCount:nc,ratingTotal:nt,avgRating:Math.round(nt/nc*10)/10});
+      }else{
+        await setDoc(br,{title:currentBook.title,authors:currentBook.authors||[],cover:currentBook.cover||'',isbn:currentBook.isbn||id,ratingCount:1,ratingTotal:curRating,avgRating:curRating});
+      }
+    }catch(aggErr){console.warn('Aggregate update failed but rating saved:',aggErr);}
     closeM('rateMov');
-    showToast('&#9733; Saved! '+curRating+' stars');
+    showToast('Saved! '+curRating+' stars');
     openBook(currentBook);
     if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
-  }catch(e){console.error(e);showToast('Error saving — try again');}
+  }catch(e){
+    console.error('SAVE ERROR:',e);
+    const code=e.code||'unknown';
+    const msg=e.message||String(e);
+    let userMsg='';
+    if(code==='permission-denied'||msg.includes('permission')){
+      userMsg='Permission denied. Open Firebase > Firestore > Rules tab and set "allow write: if request.auth != null"';
+    }else if(code==='unavailable'||msg.includes('network')){
+      userMsg='Network error - check your internet';
+    }else{
+      userMsg='Error: '+code+' - '+msg;
+    }
+    errEl.textContent=userMsg;
+    showToast('Save failed - see message below button');
+  }
   btn.textContent='Save rating';btn.disabled=false;
 };
 
