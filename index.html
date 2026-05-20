@@ -665,7 +665,11 @@ let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
 let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={};
 
 // HELPERS
-const olc=(i,s)=>`https://covers.openlibrary.org/b/isbn/${i}-${s||'M'}.jpg?default=false`;
+const olc=(isbn,s)=>{
+  // Use Google Books cover API — works from any domain
+  const zoom=s==='L'?2:s==='S'?0:1;
+  return `https://books.google.com/books/content?vid=ISBN${isbn}&printsec=frontcover&img=1&zoom=${zoom}&edge=curl&source=gbs_api`;
+};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const sj=o=>JSON.stringify(o).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 const grad=s=>{const g=['linear-gradient(145deg,#1a2a5a,#3a1a5a)','linear-gradient(145deg,#5a1a1a,#8a2020)','linear-gradient(145deg,#1a5a2a,#2a8a3a)','linear-gradient(145deg,#5a4a1a,#8a6a1a)','linear-gradient(145deg,#1a4a5a,#1a6a8a)','linear-gradient(145deg,#5a1a3a,#8a1a5a)','linear-gradient(145deg,#3a1a5a,#5a1a8a)'];let n=0;for(let i=0;i<(s||'').length;i++)n+=s.charCodeAt(i);return g[n%g.length];};
@@ -1087,37 +1091,74 @@ window.viewFriendProfile=async(uid,name,ratingCount)=>{
 
 // ── HOMEPAGE ──
 async function loadHome(){
-  // Hero: fetch a popular book from this week
-  try{
-    // Use NYT #1 hardcover fiction as the hero
-    const nytRes=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYTKEY}`);
-    const nytData=await nytRes.json();
-    const nytBooks=(nytData.results&&nytData.results.books)||[];
-    if(nytBooks.length){
-      const b=nytBooks[0];
-      const cover=b.book_image||olc(b.primary_isbn13,'L');
-      const book={title:b.title,authors:[b.author],rating:0,ratingCount:'',cover,description:b.description||'',categories:['Fiction'],publishedDate:'',isbn:b.primary_isbn13||'',previewLink:''};
-      _bookStore['hero']=book;
-      // Get real Bookmarker rating
-      let avg=null,cnt=0;
-      if(b.primary_isbn13){
-        try{const bs=await getDoc(doc(db,'books',b.primary_isbn13));if(bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}}catch(e){}
-      }
-      let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,(avg||0)-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.2,f).toFixed(2)}">&#9733;</span>`;}
-      const weeksOn=b.weeks_on_list>0?`<span style="font-size:10px;color:rgba(255,255,255,0.5);margin-left:6px;">${b.weeks_on_list} week${b.weeks_on_list!==1?'s':''} on list</span>`:'';
-      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')"><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(b.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">&#35;1 NYT Bestseller</div><div class="hero-title">${esc(b.title)}</div><div class="hero-author">${esc(b.author)}${weeksOn}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} Bookmarker ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">Be the first to rate on Bookmarker!</div>`}</div></div></div>`;
-    }
-  }catch(e){console.log('Hero load error',e);}
-
-  // Load initial genre
+  // Load genre immediately — don't wait for hero
   loadGenre('crime thriller',document.querySelector('.gtab.on'));
 
-  // Genre tab covers
-  const gISBN=['9781782392071','9780593135204','9780684801452','9781250800817','9780307743657','9780679748076'];
-  gISBN.forEach((isbn,i)=>{
+  // Genre tab covers — use first book from each genre list
+  const tabBooks=[
+    GENRE_BOOKS['crime thriller'][0],
+    GENRE_BOOKS['science fiction'][0],
+    GENRE_BOOKS['historical fiction'][0],
+    GENRE_BOOKS['romance novel'][0],
+    GENRE_BOOKS['horror fiction'][0],
+    GENRE_BOOKS['literary fiction'][0],
+  ];
+  tabBooks.forEach((b,i)=>{
     const el=document.getElementById('gc'+i);if(!el)return;
-    const img=document.createElement('img');img.src=olc(isbn,'M');img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;';img.onerror=function(){this.style.display='none';};el.appendChild(img);
+    const img=document.createElement('img');
+    img.src=olc(b.isbn,'M');
+    img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;';
+    img.onerror=function(){this.style.background=grad(b.t);this.style.display='block';this.removeAttribute('src');};
+    el.appendChild(img);
   });
+
+  // Hero card — use hardcoded #1 literary book, no network call needed
+  const heroBook=GENRE_BOOKS['literary fiction'][0];
+  const heroFull={title:heroBook.t,authors:[heroBook.a],author:heroBook.a,isbn:heroBook.isbn,cover:olc(heroBook.isbn,'L'),description:'',categories:['Literary Fiction'],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+  _bookStore['hero']=heroFull;
+  document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')">
+    <img class="hero-img" src="${olc(heroBook.isbn,'L')}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(heroBook.t)}">
+    <div class="hero-ov"></div>
+    <div class="hero-ct">
+      <div class="hero-badge">Top pick</div>
+      <div class="hero-title">${esc(heroBook.t)}</div>
+      <div class="hero-author">${esc(heroBook.a)}</div>
+      <div id="heroRating" style="font-size:12px;color:rgba(255,255,255,0.5);">Be the first to rate on Bookmarker!</div>
+    </div>
+  </div>`;
+
+  // Try NYT in background — update hero if we get a response (non-blocking)
+  setTimeout(async()=>{
+    try{
+      const ctrl=new AbortController();
+      setTimeout(()=>ctrl.abort(),4000);
+      const r=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYTKEY}`,{signal:ctrl.signal});
+      const d=await r.json();
+      const books=(d.results&&d.results.books)||[];
+      if(!books.length)return;
+      const b=books[0];
+      const cover=b.book_image||olc(b.primary_isbn13,'L');
+      const book={title:b.title,authors:[b.author],author:b.author,isbn:b.primary_isbn13||'',cover,description:b.description||'',categories:['Fiction'],publishedDate:'',previewLink:''};
+      _bookStore['hero']=book;
+      let avg=null,cnt=0;
+      if(b.primary_isbn13){try{const bs=await getDoc(doc(db,'books',b.primary_isbn13));if(bs.exists()){const dd=bs.data();avg=dd.avgRating;cnt=dd.ratingCount||0;}}catch(e){}}
+      const weeksOn=b.weeks_on_list>1?` · ${b.weeks_on_list} weeks on list`:'';
+      let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,(avg||0)-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.2,f).toFixed(2)}">&#9733;</span>`;}
+      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')">
+        <img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(b.title)}">
+        <div class="hero-ov"></div>
+        <div class="hero-ct">
+          <div class="hero-badge">#1 NYT Bestseller</div>
+          <div class="hero-title">${esc(b.title)}</div>
+          <div class="hero-author">${esc(b.author)}${weeksOn}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;gap:1px;">${stars}</div>
+            ${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} Bookmarker ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">Be the first to rate!</div>`}
+          </div>
+        </div>
+      </div>`;
+    }catch(e){/* NYT unavailable — keep hardcoded hero */}
+  },100);
 }
 
 // ── FRIENDS SYSTEM ──
