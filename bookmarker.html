@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookmarker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#0c0e14;--bg2:#13151c;--bg3:#1a1d26;--bg4:#20232e;--border:rgba(255,255,255,0.07);--text:#f0f0f0;--text2:#9a9aaa;--text3:#55566a;--star:#e8c84a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+button,input,textarea{font-family:'DM Sans',sans-serif;cursor:pointer;}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto;position:relative;background:var(--bg);}
+.screen{display:none;flex-direction:column;flex:1;padding-bottom:70px;}
+.screen.active{display:flex;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(13,15,22,0.97);backdrop-filter:blur(20px);border-top:0.5px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100;}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--text3);font-size:10px;transition:color 0.2s;padding:0 12px;}
+.nav-btn.active{color:var(--tc);}
+.nav-btn svg{width:22px;height:22px;}
+.top-bar{padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(12,14,20,0.95);backdrop-filter:blur(16px);z-index:50;border-bottom:0.5px solid var(--border);}
+.logo{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);letter-spacing:-0.5px;}
+.logo span{color:var(--tc);font-style:italic;}
+.icon-btn{background:none;border:none;color:var(--text2);display:flex;align-items:center;}
+.search-wrap{padding:12px 18px;}
+.sib{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:11px 16px;transition:border-color 0.2s;}
+.sib:focus-within{border-color:var(--tc);}
+.sib svg{width:18px;height:18px;color:var(--text3);flex-shrink:0;}
+.sib input{background:none;border:none;color:var(--text);font-size:14px;flex:1;outline:none;}
+.sib input::placeholder{color:var(--text3);}
+.sec-title{font-size:11px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:0 18px;margin-bottom:12px;}
+.hero-section{padding:0 18px 18px;}
+.hero-card{border-radius:18px;overflow:hidden;position:relative;cursor:pointer;}
+.hero-img{width:100%;height:220px;object-fit:cover;display:block;}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92) 40%,transparent 80%);}
+.hero-content{position:absolute;bottom:0;left:0;right:0;padding:16px;}
+.hero-badge{display:inline-block;background:var(--tc);color:var(--tc-dark);font-size:10px;font-weight:700;border-radius:8px;padding:3px 8px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+.hero-title{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;margin-bottom:2px;line-height:1.2;}
+.hero-author{font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:8px;}
+.hero-rating{display:flex;align-items:center;gap:6px;}
+.hero-avg{font-size:18px;font-weight:700;color:#fff;}
+.hero-cnt{font-size:11px;color:rgba(255,255,255,0.4);}
+.genre-scroll{display:flex;gap:0;overflow-x:auto;padding:0 18px;margin-bottom:16px;border-bottom:0.5px solid var(--border);scrollbar-width:none;}
+.genre-scroll::-webkit-scrollbar{display:none;}
+.genre-tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 12px 10px;cursor:pointer;flex-shrink:0;border-bottom:2px solid transparent;}
+.genre-tab.active{border-bottom-color:var(--tc);}
+.gtcov{width:52px;height:78px;border-radius:8px;overflow:hidden;flex-shrink:0;}
+.gtcov img{width:100%;height:100%;object-fit:cover;display:block;}
+.gtname{font-size:11px;color:var(--text3);}
+.genre-tab.active .gtname{color:var(--text);}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px;margin-bottom:20px;}
+.grid3-item{cursor:pointer;}
+.grid3-cover{width:100%;aspect-ratio:2/3;border-radius:10px;margin-bottom:6px;object-fit:cover;background:var(--bg3);display:block;}
+.grid3-title{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:3px;}
+.grid3-rating{font-size:11px;color:var(--tc);}
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px;}
+.result-item{cursor:pointer;}
+.result-cover{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--bg3);margin-bottom:6px;display:block;}
+.result-title{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.result-author{font-size:10px;color:var(--text3);}
+.loading-msg{text-align:center;color:var(--text3);padding:40px 18px;font-size:14px;}
+.back-bar{padding:12px 18px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:0.5px solid var(--border);}
+.back-bar svg{width:18px;height:18px;color:var(--text3);}
+.back-bar span{font-size:13px;color:var(--text3);}
+.book-hero{padding:18px;display:flex;gap:14px;border-bottom:0.5px solid var(--border);}
+.book-cover-lg{width:100px;height:150px;border-radius:12px;object-fit:cover;background:var(--bg3);flex-shrink:0;display:block;}
+.book-meta{flex:1;min-width:0;}
+.book-title-lg{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);line-height:1.25;margin-bottom:4px;}
+.book-author-lg{font-size:12px;color:var(--text3);margin-bottom:10px;}
+.frac-stars{display:flex;gap:2px;margin-bottom:4px;}
+.frac-star{position:relative;display:inline-block;font-size:22px;line-height:1;}
+.frac-star .bg{color:#2a2a35;}
+.frac-star .fg{color:var(--star);position:absolute;top:0;left:0;overflow:hidden;}
+.avg-num{font-size:32px;font-weight:700;color:var(--text);line-height:1;margin-bottom:2px;}
+.rating-cnt{font-size:11px;color:var(--text3);margin-bottom:12px;}
+.buy-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#4285f4;color:#fff;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:600;width:100%;text-decoration:none;}
+.bsec{padding:16px 18px;border-bottom:0.5px solid var(--border);}
+.bsec-title{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.ai-pill{font-size:9px;background:var(--bg4);border:0.5px solid var(--border);color:var(--text3);border-radius:8px;padding:2px 7px;}
+.see-all-btn{font-size:10px;color:var(--tc);background:none;border:0.5px solid var(--tc);border-radius:10px;padding:3px 10px;opacity:0.8;cursor:pointer;}
+.summary-text{font-size:13px;color:var(--text2);line-height:1.65;}
+.theme-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.theme-pill{font-size:11px;color:var(--text2);background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:5px 11px;cursor:pointer;}
+.tone-item{margin-bottom:10px;}
+.tone-hdr{display:flex;justify-content:space-between;margin-bottom:5px;}
+.tone-lbl{font-size:11px;font-weight:500;}
+.tone-track{height:5px;background:var(--bg4);border-radius:3px;}
+.tone-fill{height:5px;border-radius:3px;}
+.rev-item{margin-bottom:12px;}
+.rev-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.rev-name{font-size:12px;font-weight:600;color:var(--text);}
+.rev-pill{font-size:9px;background:var(--bg3);color:var(--text3);border-radius:8px;padding:2px 7px;}
+.rev-pill-fr{font-size:9px;background:rgba(93,202,165,0.12);color:var(--tc);border-radius:8px;padding:2px 7px;}
+.rev-stars-sm{font-size:12px;color:var(--star);margin-bottom:4px;}
+.rev-body{font-size:12px;color:var(--text3);line-height:1.5;}
+.frev-lbl{font-size:10px;color:var(--tc);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:4px;margin-bottom:10px;}
+.iyl-row{display:flex;gap:8px;}
+.iyl-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
+.iyl-cov{width:52px;height:78px;border-radius:7px;margin-bottom:4px;object-fit:cover;background:var(--bg3);}
+.iyl-t{font-size:9px;color:var(--text3);text-align:center;max-width:54px;line-height:1.3;}
+.rate-sticky{position:sticky;bottom:70px;background:rgba(13,15,22,0.97);backdrop-filter:blur(12px);border-top:0.5px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;z-index:40;}
+.rate-sticky-lbl{font-size:12px;color:var(--text3);}
+.rate-sticky-btn{background:var(--tc);color:var(--tc-dark);border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;border-top:0.5px solid var(--border);padding:16px 18px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-handle{width:32px;height:3px;background:var(--bg4);border-radius:2px;margin:0 auto 16px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:4px;text-align:center;}
+.modal-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:16px;}
+.half-star-row{display:flex;justify-content:center;gap:2px;margin-bottom:8px;}
+.hs-zone{position:relative;width:44px;height:50px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.hs-left{position:absolute;left:0;width:22px;height:50px;z-index:2;}
+.hs-right{position:absolute;right:0;width:22px;height:50px;z-index:2;}
+.hs-icon{font-size:40px;pointer-events:none;transition:all 0.1s;}
+.rating-lbl{text-align:center;font-size:14px;font-weight:600;color:var(--tc);margin-bottom:14px;min-height:20px;}
+.review-ta{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;padding:12px;resize:none;height:80px;margin-bottom:14px;outline:none;}
+.review-ta:focus{border-color:var(--tc);}
+.review-ta::placeholder{color:var(--text3);}
+.priv-toggle{display:flex;background:var(--bg3);border-radius:20px;overflow:hidden;margin-bottom:10px;}
+.priv-opt{flex:1;padding:9px;font-size:12px;color:var(--text3);cursor:pointer;text-align:center;border:none;background:none;display:flex;align-items:center;justify-content:center;gap:5px;font-family:'DM Sans',sans-serif;}
+.priv-opt.on{background:var(--bg4);color:var(--text);border-radius:20px;}
+.priv-note{font-size:11px;color:var(--text3);text-align:center;margin-bottom:16px;}
+.save-btn{width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:16px;padding:14px;font-size:15px;font-weight:700;}
+.friend-banner{padding:18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);}
+.fb-blob{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.3;pointer-events:none;}
+.fb-inner{position:relative;z-index:1;}
+.fb-row{display:flex;gap:12px;align-items:center;margin-bottom:10px;}
+.fb-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.15);}
+.fb-name{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);margin-bottom:2px;}
+.fb-sub{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;}
+.fb-quote{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic;line-height:1.5;}
+.fb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.fb-chip{font-size:10px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:3px 9px;color:rgba(255,255,255,0.55);}
+.profile-hero{padding:24px 18px 18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);}
+.pr-blob{position:absolute;border-radius:50%;filter:blur(50px);opacity:0.35;pointer-events:none;}
+.pr-inner{position:relative;z-index:1;}
+.pr-av{width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin:0 auto 10px;}
+.pr-name{font-family:'DM Serif Display',serif;font-size:22px;color:#fff;text-align:center;margin-bottom:2px;}
+.pr-join{font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:14px;}
+.color-dots{display:flex;gap:10px;justify-content:center;margin-bottom:14px;}
+.cdot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:border-color 0.2s;}
+.cdot.on{border-color:#fff;}
+.pr-stats{display:flex;gap:10px;}
+.pr-stat{flex:1;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 8px;text-align:center;}
+.pr-stat-n{font-size:22px;font-weight:700;color:#fff;}
+.pr-stat-l{font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.hist-wrap{padding:18px;border-bottom:0.5px solid var(--border);}
+.hist-label{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px;}
+.hist-outer{display:flex;align-items:flex-end;gap:10px;}
+.hist-single-star{font-size:18px;flex-shrink:0;margin-bottom:16px;}
+.hist-five-stars{display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;}
+.hist-bars{display:flex;align-items:flex-end;gap:4px;flex:1;}
+.hb-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.hb-bar{width:100%;border-radius:3px 3px 0 0;min-height:4px;}
+.hb-lbl{font-size:8px;color:var(--text3);}
+.ach-wrap{padding:18px;border-bottom:0.5px solid var(--border);}
+.ach-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.ach-scroll::-webkit-scrollbar{display:none;}
+.ach-card{flex-shrink:0;width:90px;background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:transform 0.15s;}
+.ach-card:hover{transform:translateY(-2px);}
+.ach-card.locked{opacity:0.35;}
+.ach-card-icon{font-size:26px;margin-bottom:6px;}
+.ach-card-name{font-size:10px;color:var(--text2);line-height:1.3;margin-bottom:5px;}
+.ach-rarity{font-size:9px;border-radius:8px;padding:2px 6px;display:inline-block;}
+.r-common{background:#221408;color:#c8784a;}
+.r-uncommon{background:var(--bg4);color:#aaa;}
+.r-rare{background:#2a1a04;color:#e8c84a;}
+.r-legendary{background:#2a1a00;color:#e8c84a;}
+.fav5-wrap{padding:18px;border-bottom:0.5px solid var(--border);}
+.fav5-row{display:flex;gap:8px;}
+.fav5-slot{width:58px;height:87px;border-radius:10px;background:var(--bg3);border:0.5px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;}
+.fav5-slot.filled{border:none;}
+.fav5-slot img{width:100%;height:100%;object-fit:cover;}
+.fav5-slot svg{width:20px;height:20px;color:var(--text3);}
+.shelf-wrap{padding:18px;border-bottom:0.5px solid var(--border);}
+.shelf-row{background:#0c0804;border:0.5px solid #2a1a08;border-radius:8px 8px 0 0;padding:12px 12px 0;display:flex;gap:4px;align-items:flex-end;overflow-x:auto;min-height:120px;scrollbar-width:none;}
+.shelf-row::-webkit-scrollbar{display:none;}
+.shelf-plank{height:7px;background:#2a1408;border-radius:0 0 6px 6px;margin-bottom:2px;}
+.shelf-book{flex-shrink:0;border-radius:2px 5px 5px 2px;cursor:pointer;transition:transform 0.18s;overflow:hidden;}
+.shelf-book:hover{transform:translateY(-10px);}
+.shelf-book img{width:100%;height:100%;object-fit:cover;display:block;}
+.ach-detail-hero{display:flex;flex-direction:column;align-items:center;padding:10px 0 18px;border-bottom:0.5px solid var(--border);margin-bottom:16px;}
+.ach-detail-icon{font-size:56px;margin-bottom:10px;}
+.ach-detail-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:6px;text-align:center;}
+.ach-detail-desc{font-size:13px;color:var(--text3);text-align:center;line-height:1.6;margin-bottom:10px;}
+.ach-next-title{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;}
+.ach-next-item{display:flex;align-items:center;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;}
+.ach-next-icon{font-size:22px;}
+.ach-next-name{font-size:13px;color:var(--text2);font-weight:500;margin-bottom:2px;}
+.ach-next-desc{font-size:11px;color:var(--text3);}
+.ach-next-rarity{margin-left:auto;flex-shrink:0;font-size:10px;border-radius:8px;padding:3px 8px;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--tc);color:var(--tc-dark);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="top-bar">
+    <div class="logo">book<span>boxd</span></div>
+    <button class="icon-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></button>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <div class="hero-section" style="padding-top:16px;">
+      <div class="sec-title" style="margin-bottom:10px;">For you</div>
+      <div id="heroCard">
+        <div class="hero-card">
+          <div class="hero-img" style="background:linear-gradient(145deg,#1a2a5a,#3a1a5a);height:220px;"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <div class="hero-badge">Top pick this week</div>
+            <div class="hero-title" style="color:#888;">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sec-title">Your genres</div>
+    <div class="genre-scroll" id="genreScroll">
+      <div class="genre-tab active" onclick="searchGenre('crime thriller')">
+        <div class="gtcov" id="gcov-crime" style="background:linear-gradient(145deg,#5a1a1a,#8a2020);"></div>
+        <div class="gtname">Crime</div>
+      </div>
+      <div class="genre-tab" onclick="searchGenre('science fiction')">
+        <div class="gtcov" id="gcov-scifi" style="background:linear-gradient(145deg,#1a2a5a,#3a1a5a);"></div>
+        <div class="gtname">Sci-Fi</div>
+      </div>
+      <div class="genre-tab" onclick="searchGenre('historical fiction')">
+        <div class="gtcov" id="gcov-hist" style="background:linear-gradient(145deg,#5a4a1a,#8a6a1a);"></div>
+        <div class="gtname">History</div>
+      </div>
+      <div class="genre-tab" onclick="searchGenre('romance novel')">
+        <div class="gtcov" id="gcov-rom" style="background:linear-gradient(145deg,#5a1a3a,#8a1a5a);"></div>
+        <div class="gtname">Romance</div>
+      </div>
+      <div class="genre-tab" onclick="searchGenre('horror fiction')">
+        <div class="gtcov" id="gcov-horror" style="background:linear-gradient(145deg,#1a1a1a,#2a0a0a);"></div>
+        <div class="gtname">Horror</div>
+      </div>
+      <div class="genre-tab" onclick="searchGenre('literary fiction')">
+        <div class="gtcov" id="gcov-lit" style="background:linear-gradient(145deg,#1a4a5a,#1a6a8a);"></div>
+        <div class="gtname">Literary</div>
+      </div>
+    </div>
+    <div class="sec-title">Recommended for you</div>
+    <div class="grid3" id="homeGrid">
+      <div style="grid-column:1/-1;" class="loading-msg">Loading covers...</div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="screen" id="screen-search">
+  <div class="top-bar"><div class="logo">book<span>boxd</span></div></div>
+  <div class="search-wrap">
+    <div class="sib">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Search for any book..." oninput="onSearchInput(this.value)"/>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <div id="searchResults" class="results-grid" style="padding-top:4px;"></div>
+    <div id="searchMsg" class="loading-msg">Start typing to search millions of books</div>
+  </div>
+</div>
+
+<!-- BOOK DETAIL -->
+<div class="screen" id="screen-book">
+  <div class="back-bar" onclick="goBack()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg>
+    <span>Back</span>
+  </div>
+  <div style="flex:1;overflow-y:auto;" id="bookContent"></div>
+  <div class="rate-sticky">
+    <div class="rate-sticky-lbl">Loved it? Hated it?</div>
+    <button class="rate-sticky-btn" onclick="openRateModal()">★ Rate this book</button>
+  </div>
+</div>
+
+<!-- FRIENDS -->
+<div class="screen" id="screen-friends">
+  <div class="top-bar">
+    <div class="logo">book<span>boxd</span></div>
+    <button onclick="showToast('Add friend coming soon!')" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:6px 10px;color:var(--tc);font-size:12px;font-weight:600;">+ Add friend</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <div class="friend-banner">
+      <div class="fb-blob" style="width:160px;height:160px;top:-40px;left:-30px;background:#5DCAA5;"></div>
+      <div class="fb-blob" style="width:120px;height:120px;top:10px;right:-20px;background:#85B7EB;"></div>
+      <div class="fb-inner">
+        <div class="fb-row"><div class="fb-av" style="background:#1a1a4a;color:#85B7EB;">EK</div><div><div class="fb-name">Emma K.</div><div class="fb-sub">Dublin · 89 books read</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">Just finished: The Midnight Library</div></div></div>
+        <div class="fb-quote">"Genuinely moved me. Read it in one sitting on a rainy Sunday."</div>
+        <div class="fb-chips"><div class="fb-chip">📚 Century reader</div><div class="fb-chip">⭐ Tough critic</div><div class="fb-chip">🔥 On a streak</div></div>
+      </div>
+    </div>
+    <div class="friend-banner">
+      <div class="fb-blob" style="width:160px;height:160px;top:-40px;left:-30px;background:#F0997B;"></div>
+      <div class="fb-blob" style="width:120px;height:120px;top:10px;right:-20px;background:#e8c84a;"></div>
+      <div class="fb-inner">
+        <div class="fb-row"><div class="fb-av" style="background:#3a1a1a;color:#F0997B;">JO</div><div><div class="fb-name">James O.</div><div class="fb-sub">Cork · 143 books read</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">Just finished: Holly</div></div></div>
+        <div class="fb-quote">"King at his best. Dark and completely gripping."</div>
+        <div class="fb-chips"><div class="fb-chip">📚 Century reader</div><div class="fb-chip">🔥 On a streak</div></div>
+      </div>
+    </div>
+    <div class="friend-banner">
+      <div class="fb-blob" style="width:160px;height:160px;top:-40px;left:-30px;background:#97C459;"></div>
+      <div class="fb-blob" style="width:120px;height:120px;top:10px;right:-20px;background:#5DCAA5;"></div>
+      <div class="fb-inner">
+        <div class="fb-row"><div class="fb-av" style="background:#1a3a1a;color:#97C459;">CR</div><div><div class="fb-name">Claire R.</div><div class="fb-sub">Galway · 201 books read</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">Just finished: Demon Copperhead</div></div></div>
+        <div class="fb-quote">"Kingsolver is untouchable. Absolutely stunning."</div>
+        <div class="fb-chips"><div class="fb-chip">📚 Century reader</div><div class="fb-chip">🌍 World traveller</div><div class="fb-chip">⭐ Tough critic</div></div>
+      </div>
+    </div>
+    <div class="friend-banner">
+      <div class="fb-blob" style="width:160px;height:160px;top:-40px;left:-30px;background:#85B7EB;"></div>
+      <div class="fb-blob" style="width:120px;height:120px;top:10px;right:-20px;background:#7F77DD;"></div>
+      <div class="fb-inner">
+        <div class="fb-row"><div class="fb-av" style="background:#1a2a3a;color:#85B7EB;">SM</div><div><div class="fb-name">Sean M.</div><div class="fb-sub">Dublin · 55 books read</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">Just finished: Fourth Wing</div></div></div>
+        <div class="fb-quote">"Addictive. Couldn't put it down all weekend."</div>
+        <div class="fb-chips"><div class="fb-chip">🔥 On a streak</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="screen-profile">
+  <div class="ach-ov-wrap modal-overlay" id="achModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button onclick="document.getElementById('achModal').classList.remove('open')" style="position:absolute;top:20px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">✕</button>
+      <div class="ach-detail-hero">
+        <div class="ach-detail-icon" id="achIcon">📚</div>
+        <div class="ach-detail-title" id="achTitle">Century reader</div>
+        <div class="ach-detail-desc" id="achDesc">You've read 100+ books.</div>
+        <span class="ach-rarity r-uncommon" id="achBadge">Uncommon</span>
+      </div>
+      <div class="ach-next-title">Next achievements to unlock</div>
+      <div class="ach-next-item"><div class="ach-next-icon">📖</div><div><div class="ach-next-name">Book of the year</div><div class="ach-next-desc">Read 50 books in a calendar year</div></div><span class="ach-next-rarity r-rare">Rare</span></div>
+      <div class="ach-next-item"><div class="ach-next-icon">🏆</div><div><div class="ach-next-name">Bookmarker elite</div><div class="ach-next-desc">Read 500+ books total</div></div><span class="ach-next-rarity r-legendary">Legendary</span></div>
+      <div class="ach-next-item"><div class="ach-next-icon">🌍</div><div><div class="ach-next-name">World traveller</div><div class="ach-next-desc">Authors from 20+ countries</div></div><span class="ach-next-rarity r-uncommon">Uncommon</span></div>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <div class="profile-hero">
+      <div class="pr-blob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:#5DCAA5;"></div>
+      <div class="pr-blob" id="prB2" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div>
+      <div class="pr-blob" id="prB3" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div>
+      <div class="pr-inner">
+        <div class="pr-av">S</div>
+        <div class="pr-name">Stephen</div>
+        <div class="pr-join">Member since 2024 · Dublin, Ireland</div>
+        <div class="color-dots">
+          <div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5','#85B7EB','#ED93B1','#0a2a20')"></div>
+          <div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a','#EF9F27','#F0997B','#1a0800')"></div>
+          <div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB','#7F77DD','#5DCAA5','#0a1a30')"></div>
+          <div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1','#F0997B','#e8c84a','#2a0a18')"></div>
+          <div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC','#5DCAA5','#ED93B1','#1a1040')"></div>
+        </div>
+        <div class="pr-stats">
+          <div class="pr-stat"><div class="pr-stat-n" id="statBooks">0</div><div class="pr-stat-l">Books</div></div>
+          <div class="pr-stat"><div class="pr-stat-n" id="statReviews">0</div><div class="pr-stat-l">Reviews</div></div>
+          <div class="pr-stat"><div class="pr-stat-n">3</div><div class="pr-stat-l">Achievements</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hist-wrap">
+      <div class="hist-label">Ratings</div>
+      <div class="hist-outer">
+        <span class="hist-single-star" id="histStarL" style="color:var(--tc);">★</span>
+        <div class="hist-bars" id="histBars"></div>
+        <div class="hist-five-stars" id="histStarsR" style="color:var(--tc);"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+      </div>
+    </div>
+    <div class="fav5-wrap">
+      <div class="sec-title" style="padding:0;margin-bottom:12px;">Top 5 favourite books</div>
+      <div class="fav5-row" id="fav5Row">
+        <div class="fav5-slot" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg></div>
+        <div class="fav5-slot" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg></div>
+        <div class="fav5-slot" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg></div>
+        <div class="fav5-slot" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg></div>
+        <div class="fav5-slot" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg></div>
+      </div>
+    </div>
+    <div class="ach-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="sec-title" style="padding:0;margin-bottom:0;">Achievements</div>
+        <span style="font-size:10px;color:var(--text3);">Swipe →</span>
+      </div>
+      <div class="ach-scroll">
+        <div class="ach-card" onclick="openAchModal('📚','Century reader','You have read 100+ books — only 2% of Bookmarker readers reach this milestone.','r-uncommon','Uncommon')"><div class="ach-card-icon">📚</div><div class="ach-card-name">Century reader</div><span class="ach-rarity r-uncommon">Uncommon</span></div>
+        <div class="ach-card" onclick="openAchModal('⭐','Tough critic','You have given only 5 five-star ratings. You do not hand those out lightly.','r-rare','Rare')"><div class="ach-card-icon">⭐</div><div class="ach-card-name">Tough critic</div><span class="ach-rarity r-rare">Rare</span></div>
+        <div class="ach-card" onclick="openAchModal('🔥','On a streak','12 months reading in a row. A true habit.','r-common','Common')"><div class="ach-card-icon">🔥</div><div class="ach-card-name">On a streak</div><span class="ach-rarity r-common">Common</span></div>
+        <div class="ach-card locked" onclick="openAchModal('📖','Book of the year','Read 50 books in a single calendar year.','r-rare','Rare')"><div class="ach-card-icon">📖</div><div class="ach-card-name">Book of the year</div><span class="ach-rarity r-rare">Rare</span></div>
+        <div class="ach-card locked" onclick="openAchModal('🏆','Bookmarker elite','Read 500+ books. An absolute legend.','r-legendary','Legendary')"><div class="ach-card-icon">🏆</div><div class="ach-card-name">Bookmarker elite</div><span class="ach-rarity r-legendary">Legendary</span></div>
+        <div class="ach-card locked" onclick="openAchModal('🌍','World traveller','Read authors from 20+ different countries.','r-uncommon','Uncommon')"><div class="ach-card-icon">🌍</div><div class="ach-card-name">World traveller</div><span class="ach-rarity r-uncommon">Uncommon</span></div>
+      </div>
+    </div>
+    <div class="shelf-wrap">
+      <div class="sec-title" style="padding:0;margin-bottom:10px;">Want to read</div>
+      <div class="shelf-row" id="shelfRow"></div>
+      <div class="shelf-plank"></div>
+    </div>
+    <div style="padding:18px 18px 24px;">
+      <div class="sec-title" style="padding:0;margin-bottom:10px;">My lists</div>
+      <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+        <div><div style="font-size:13px;color:var(--text2);font-weight:500;">Read diary</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">Private entries</div></div>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--text3);"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+        <div><div style="font-size:13px;color:var(--text2);font-weight:500;">All books read</div><div id="allBooksLbl" style="font-size:11px;color:var(--text3);margin-top:2px;">0 books</div></div>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--text3);"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end app -->
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home</button>
+  <button class="nav-btn" id="nav-search" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search</button>
+  <button class="nav-btn" id="nav-friends" onclick="showScreen('friends')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>Friends</button>
+  <button class="nav-btn" id="nav-profile" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+</nav>
+
+<!-- RATE MODAL -->
+<div class="modal-overlay" id="rateModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="rateModalTitle">Rate this book</div>
+    <div class="modal-sub">Left half of a star = half rating</div>
+    <div class="half-star-row">
+      <div class="hs-zone"><div class="hs-left" onclick="setRating(0.5)"></div><div class="hs-right" onclick="setRating(1)"></div><span class="hs-icon" id="hsi1" style="color:#2a2a35;">★</span></div>
+      <div class="hs-zone"><div class="hs-left" onclick="setRating(1.5)"></div><div class="hs-right" onclick="setRating(2)"></div><span class="hs-icon" id="hsi2" style="color:#2a2a35;">★</span></div>
+      <div class="hs-zone"><div class="hs-left" onclick="setRating(2.5)"></div><div class="hs-right" onclick="setRating(3)"></div><span class="hs-icon" id="hsi3" style="color:#2a2a35;">★</span></div>
+      <div class="hs-zone"><div class="hs-left" onclick="setRating(3.5)"></div><div class="hs-right" onclick="setRating(4)"></div><span class="hs-icon" id="hsi4" style="color:#2a2a35;">★</span></div>
+      <div class="hs-zone"><div class="hs-left" onclick="setRating(4.5)"></div><div class="hs-right" onclick="setRating(5)"></div><span class="hs-icon" id="hsi5" style="color:#2a2a35;">★</span></div>
+    </div>
+    <div class="rating-lbl" id="ratingLbl">Tap to rate</div>
+    <textarea class="review-ta" id="reviewText" placeholder="Write your review... (optional)"></textarea>
+    <div class="priv-toggle">
+      <button class="priv-opt on" id="privPublic" onclick="setPriv('public')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg> Public review</button>
+      <button class="priv-opt" id="privPrivate" onclick="setPriv('private')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Private diary</button>
+    </div>
+    <div class="priv-note" id="privNote">Visible to everyone on Bookmarker</div>
+    <button class="save-btn" onclick="saveRating()">Save rating</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var TC='#5DCAA5', TCD='#0a2a20';
+var currentBook=null, prevScreen='home', currentRating=0;
+var ratings=[], booksRead=[], searchTimer=null;
+
+// Open Library covers work from local files — no CORS issues
+// ISBN-13s for the featured books
+var featuredBooks=[
+  {title:'The Midnight Library',authors:['Matt Haig'],isbn:'9780525559474',rating:4.1,ratingCount:'382,000',description:'Nora Seed finds herself in a magical library between life and death. Each book holds a different version of her life — she must choose which one is worth living.',categories:['Fiction','Philosophy'],publishedDate:'2020',hero:true},
+  {title:'Holly',authors:['Stephen King'],isbn:'9781668016138',rating:3.9,ratingCount:'210,000',description:'Holly Gibney investigates a series of disappearances linked to a seemingly respectable couple in a quiet college town.',categories:['Horror','Thriller'],publishedDate:'2023'},
+  {title:'Tomorrow, and Tomorrow, and Tomorrow',authors:['Gabrielle Zevin'],isbn:'9780593321201',rating:4.3,ratingCount:'290,000',description:'Two college friends meet by chance and form a brilliant creative partnership that spans decades.',categories:['Literary Fiction'],publishedDate:'2022'},
+  {title:'Fourth Wing',authors:['Rebecca Yarros'],isbn:'9781649374042',rating:4.1,ratingCount:'450,000',description:'At Basgiath War College, Violet Sorrengail is forced to choose between survival and her heart.',categories:['Fantasy','Romance'],publishedDate:'2023'},
+  {title:'Orbital',authors:['Samantha Harvey'],isbn:'9780802163714',rating:4.0,ratingCount:'85,000',description:'Six astronauts orbit Earth, witnessing its beauty while cut off from the chaos below.',categories:['Literary Fiction'],publishedDate:'2023'},
+  {title:'Intermezzo',authors:['Sally Rooney'],isbn:'9780374610364',rating:3.8,ratingCount:'120,000',description:'Two brothers navigate grief and love in very different ways after their father\'s death.',categories:['Literary Fiction'],publishedDate:'2024'},
+  {title:'Demon Copperhead',authors:['Barbara Kingsolver'],isbn:'9780063251922',rating:4.4,ratingCount:'195,000',description:'A modern retelling of David Copperfield set in Appalachia during the opioid crisis.',categories:['Literary Fiction'],publishedDate:'2022'},
+  {title:'Normal People',authors:['Sally Rooney'],isbn:'9780571334650',rating:3.7,ratingCount:'310,000',description:'Connell and Marianne grow up in the same small town but live very different lives.',categories:['Literary Fiction'],publishedDate:'2018'},
+  {title:'James',authors:['Percival Everett'],isbn:'9780385550369',rating:4.0,ratingCount:'95,000',description:'A reimagining of Huckleberry Finn told from the perspective of Jim.',categories:['Literary Fiction','Historical'],publishedDate:'2024'},
+];
+
+var genreTabs=[
+  {id:'gcov-crime',isbn:'9781782392071'},
+  {id:'gcov-scifi',isbn:'9780593135204'},
+  {id:'gcov-hist',isbn:'9780684801452'},
+  {id:'gcov-rom',isbn:'9781250800817'},
+  {id:'gcov-horror',isbn:'9780307743657'},
+  {id:'gcov-lit',isbn:'9780679748076'},
+];
+
+function olCover(isbn,size){
+  // Open Library cover API — works from any origin
+  size=size||'M';
+  return 'https://covers.openlibrary.org/b/isbn/'+isbn+'-'+size+'.jpg?default=false';
+}
+
+function loadHomepage(){
+  // Hero card
+  var hero=featuredBooks[0];
+  var coverUrl=olCover(hero.isbn,'L');
+  var bd=safeJson(hero);
+  var stars='';
+  for(var i=1;i<=5;i++){var f=Math.min(1,Math.max(0,hero.rating-(i-1)));stars+='<span style="color:var(--tc);opacity:'+Math.max(0.25,f).toFixed(2)+'">★</span>';}
+  document.getElementById('heroCard').innerHTML=
+    '<div class="hero-card" onclick=\'openBook('+bd+')\'>' +
+    '<img class="hero-img" src="'+coverUrl+'" onerror="this.style.background=\'linear-gradient(145deg,#1a2a5a,#3a1a5a)\';this.src=\'\'" alt="'+esc(hero.title)+'" style="height:220px;width:100%;object-fit:cover;">' +
+    '<div class="hero-overlay"></div>' +
+    '<div class="hero-content">' +
+      '<div class="hero-badge">Top pick this week</div>' +
+      '<div class="hero-title">'+esc(hero.title)+'</div>' +
+      '<div class="hero-author">'+esc(hero.authors[0])+' · '+hero.publishedDate+'</div>' +
+      '<div class="hero-rating"><div style="display:flex;gap:1px;">'+stars+'</div><div class="hero-avg">'+hero.rating+'</div><div class="hero-cnt">'+hero.ratingCount+' ratings</div></div>' +
+    '</div></div>';
+
+  // Grid
+  var grid=document.getElementById('homeGrid');
+  grid.innerHTML='';
+  featuredBooks.slice(1).forEach(function(book){
+    var cover=olCover(book.isbn,'M');
+    var bd2=safeJson(book);
+    var div=document.createElement('div');
+    div.className='grid3-item';
+    div.setAttribute('onclick','openBook('+bd2+')');
+    div.innerHTML=
+      '<img class="grid3-cover" src="'+cover+'" onerror="this.style.background=\''+randomGrad(book.title)+'\';this.src=\'\'" alt="'+esc(book.title)+'" loading="lazy">'+
+      '<div class="grid3-title">'+esc(book.title)+'</div>'+
+      '<div class="grid3-rating">★ '+book.rating+'</div>';
+    grid.appendChild(div);
+  });
+
+  // Genre tabs
+  genreTabs.forEach(function(g){
+    var el=document.getElementById(g.id);
+    if(!el)return;
+    var img=document.createElement('img');
+    img.src=olCover(g.isbn,'M');
+    img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;';
+    img.onerror=function(){this.style.display='none';};
+    el.appendChild(img);
+  });
+
+  // Shelf
+  buildShelf();
+}
+
+function buildShelf(){
+  var row=document.getElementById('shelfRow');
+  if(!row)return;
+  var colors=['linear-gradient(180deg,#1a2a5a,#3a1a5a)','linear-gradient(180deg,#5a1a1a,#8a2020)','linear-gradient(180deg,#1a5a2a,#2a8a3a)','linear-gradient(180deg,#5a4a1a,#8a6a1a)','linear-gradient(180deg,#1a4a5a,#1a6a8a)','linear-gradient(180deg,#5a1a3a,#8a1a5a)','linear-gradient(180deg,#3a1a5a,#5a1a8a)','linear-gradient(180deg,#1a5a4a,#1a8a6a)'];
+  var heights=[96,82,90,76,88,80,94,78];
+  row.innerHTML=colors.map(function(c,i){
+    return '<div class="shelf-book" style="width:28px;height:'+heights[i]+'px;background:'+c+';" onclick="showScreen(\'search\')"></div>';
+  }).join('');
+}
+
+// GOOGLE BOOKS SEARCH — works when online, gracefully handles CORS
+function onSearchInput(val){
+  clearTimeout(searchTimer);
+  if(val.length<2){document.getElementById('searchResults').innerHTML='';document.getElementById('searchMsg').style.display='block';document.getElementById('searchMsg').textContent='Start typing to search millions of books';return;}
+  document.getElementById('searchMsg').style.display='block';
+  document.getElementById('searchMsg').textContent='Searching...';
+  searchTimer=setTimeout(function(){doSearch(val);},400);
+}
+
+function searchGenre(genre){showScreen('search');document.getElementById('searchInput').value=genre;doSearch(genre);}
+
+function doSearch(q){
+  var url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&maxResults=18&langRestrict=en';
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      document.getElementById('searchMsg').style.display='none';
+      renderResults(data.items||[]);
+    })
+    .catch(function(){
+      document.getElementById('searchMsg').textContent='Could not connect. Check your internet connection.';
+    });
+}
+
+function renderResults(items){
+  var el=document.getElementById('searchResults');
+  if(!items.length){el.innerHTML='';document.getElementById('searchMsg').style.display='block';document.getElementById('searchMsg').textContent='No results found';return;}
+  el.innerHTML=items.map(function(item){
+    var info=item.volumeInfo||{};
+    var isbn=(info.industryIdentifiers||[]).find(function(x){return x.type==='ISBN_13';});
+    var cover=isbn?olCover(isbn.identifier,'M'):'';
+    if(!cover&&info.imageLinks){cover=(info.imageLinks.thumbnail||info.imageLinks.smallThumbnail||'').replace('http:','https:').replace('zoom=1','zoom=2');}
+    var book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:(3.5+Math.random()*1.2).toFixed(1),ratingCount:Math.floor(Math.random()*200000+5000).toLocaleString(),cover:cover,description:(info.description||'').substring(0,400),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),previewLink:info.previewLink||''};
+    var bd=safeJson(book);
+    var coverHtml=cover?'<img class="result-cover" src="'+cover+'" onerror="this.style.background=\''+randomGrad(book.title)+'\';this.removeAttribute(\'src\')" alt="'+esc(book.title)+'" loading="lazy">':'<div class="result-cover" style="background:'+randomGrad(book.title)+';"></div>';
+    return '<div class="result-item" onclick=\'openBook('+bd+')\'>'+coverHtml+'<div class="result-title">'+esc(book.title)+'</div><div class="result-author">'+esc((info.authors||[''])[0])+'</div></div>';
+  }).join('');
+}
+
+function openBook(book){
+  currentBook=book;
+  showScreen('book');
+  var rating=parseFloat(book.rating)||4.0;
+  var coverHtml=book.cover?'<img class="book-cover-lg" src="'+book.cover+'" onerror="this.style.background=\''+randomGrad(book.title)+'\';this.removeAttribute(\'src\')" alt="'+esc(book.title)+'">':'<div class="book-cover-lg" style="background:'+randomGrad(book.title)+';"></div>';
+  var fracStars='';
+  for(var i=1;i<=5;i++){var fill=Math.min(1,Math.max(0,rating-(i-1)));fracStars+='<span class="frac-star"><span class="bg">★</span><span class="fg" style="width:'+Math.round(fill*100)+'%;">★</span></span>';}
+  var themeHtml=(book.categories||[]).slice(0,5).map(function(c){return '<div class="theme-pill">'+esc(c)+'</div>';}).join('')||'<div class="theme-pill">Fiction</div><div class="theme-pill">Contemporary</div>';
+  var buyLink=book.previewLink||'https://books.google.com/books?q='+encodeURIComponent(book.title);
+  document.getElementById('bookContent').innerHTML=
+    '<div class="book-hero">'+coverHtml+'<div class="book-meta"><div class="book-title-lg">'+esc(book.title)+'</div><div class="book-author-lg">'+esc((book.authors||[]).join(', '))+(book.publishedDate?' · '+book.publishedDate:'')+'</div><div class="frac-stars">'+fracStars+'</div><div class="avg-num">'+rating+'</div><div class="rating-cnt">'+esc(book.ratingCount)+' ratings</div><a href="'+buyLink+'" target="_blank" class="buy-btn">🛒 Buy on Google Books</a></div></div>'+
+    '<div class="bsec"><div class="bsec-title">Summary <span class="ai-pill">AI</span></div><div class="summary-text">'+esc((book.description||'').substring(0,320))+(book.description&&book.description.length>320?'...':'')+'</div></div>'+
+    '<div class="bsec"><div class="bsec-title">Themes</div><div class="theme-pills">'+themeHtml+'</div></div>'+
+    '<div class="bsec"><div class="bsec-title">Tone</div>'+
+      '<div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#444;font-size:11px;">Dark</span></div><div class="tone-track"><div class="tone-fill" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div>'+
+      '<div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow burn</span><span class="tone-lbl" style="color:#444;font-size:11px;">Fast</span></div><div class="tone-track"><div class="tone-fill" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div>'+
+      '<div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#444;font-size:11px;">Heavy</span></div><div class="tone-track"><div class="tone-fill" style="width:65%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div>'+
+      '<div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#ED93B1;">Emotional</span><span class="tone-lbl" style="color:#444;font-size:11px;">Detached</span></div><div class="tone-track"><div class="tone-fill" style="width:75%;background:linear-gradient(90deg,#ED93B1,#D4537E);"></div></div></div>'+
+    '</div>'+
+    '<div class="bsec"><div class="frev-lbl">👥 Friends\' reviews</div><div class="rev-item"><div class="rev-header"><span class="rev-name">Emma K.</span><span class="rev-pill-fr">★★★★</span></div><div class="rev-body">Genuinely moved me. Read it in one sitting.</div></div><div class="rev-item"><div class="rev-header"><span class="rev-name">James O.</span><span class="rev-pill-fr">★★★</span></div><div class="rev-body">Good concept, a bit slow but worth it.</div></div></div>'+
+    '<div class="bsec" id="pubRevSec"><div class="bsec-title">Public reviews <button class="see-all-btn" onclick="toggleRevs()">See all</button></div><div id="revShort"><div class="rev-item"><div class="rev-header"><span class="rev-name">@sarah_reads</span><span class="rev-pill">Public</span></div><div class="rev-stars-sm">★★★★★</div><div class="rev-body">Cried twice. One of the best books I\'ve read.</div></div></div><div id="revFull" style="display:none;"><div class="rev-item"><div class="rev-header"><span class="rev-name">@sarah_reads</span><span class="rev-pill">Public</span></div><div class="rev-stars-sm">★★★★★</div><div class="rev-body">Cried twice. One of the best books I\'ve read.</div></div><div class="rev-item"><div class="rev-header"><span class="rev-name">@booknerd</span><span class="rev-pill">Public</span></div><div class="rev-stars-sm">★★★★</div><div class="rev-body">Beautiful premise. A bit predictable but loved the ending.</div></div><div class="rev-item"><div class="rev-header"><span class="rev-name">@mark_b</span><span class="rev-pill">Public</span></div><div class="rev-stars-sm">★★★</div><div class="rev-body">Not my usual genre but I see why people love it.</div></div></div></div>'+
+    '<div style="height:80px;"></div>';
+  document.getElementById('bookContent').scrollTop=0;
+}
+
+var revOpen=false;
+function toggleRevs(){revOpen=!revOpen;document.getElementById('revShort').style.display=revOpen?'none':'block';document.getElementById('revFull').style.display=revOpen?'block':'none';}
+
+function openRateModal(){
+  currentRating=0;
+  for(var i=1;i<=5;i++){var el=document.getElementById('hsi'+i);if(el)el.style.cssText='font-size:40px;color:#2a2a35;pointer-events:none;';}
+  document.getElementById('ratingLbl').textContent='Tap to rate';
+  document.getElementById('reviewText').value='';
+  document.getElementById('rateModalTitle').textContent='Rate: '+(currentBook?currentBook.title.substring(0,28):'this book');
+  document.getElementById('rateModal').classList.add('open');
+}
+function setRating(v){
+  currentRating=v;
+  var labels=['','½ star','1 star','1½ stars','2 stars','2½ stars','3 stars','3½ stars','4 stars','4½ stars','5 stars'];
+  document.getElementById('ratingLbl').textContent=labels[Math.round(v*2)]||'';
+  document.getElementById('ratingLbl').style.color=TC;
+  for(var i=1;i<=5;i++){
+    var el=document.getElementById('hsi'+i);if(!el)continue;
+    if(i<=Math.floor(v)){el.style.cssText='font-size:40px;color:'+TC+';pointer-events:none;';}
+    else if(i===Math.ceil(v)&&v%1!==0){el.style.cssText='font-size:40px;background:linear-gradient(90deg,'+TC+' 50%,#2a2a35 50%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;pointer-events:none;';}
+    else{el.style.cssText='font-size:40px;color:#2a2a35;pointer-events:none;';}
+  }
+}
+function setPriv(m){
+  document.getElementById('privPublic').classList.toggle('on',m==='public');
+  document.getElementById('privPrivate').classList.toggle('on',m==='private');
+  document.getElementById('privNote').textContent=m==='public'?'Visible to everyone on Bookmarker':'Only visible to you — saved in your private diary';
+}
+function saveRating(){
+  if(!currentRating){showToast('Please tap a star first');return;}
+  ratings.push({book:currentBook,rating:currentRating,review:document.getElementById('reviewText').value});
+  if(currentBook&&!booksRead.find(function(b){return b.title===currentBook.title;})){booksRead.push(currentBook);updateStats();}
+  document.getElementById('rateModal').classList.remove('open');
+  renderHist();
+  showToast('Saved! '+currentRating+' stars for '+(currentBook?currentBook.title.substring(0,20):'book'));
+}
+function updateStats(){
+  document.getElementById('statBooks').textContent=booksRead.length;
+  document.getElementById('statReviews').textContent=ratings.filter(function(r){return r.review;}).length;
+  document.getElementById('allBooksLbl').textContent=booksRead.length+' books';
+}
+function renderHist(){
+  var el=document.getElementById('histBars');if(!el)return;
+  var base=[4,7,6,12,16,28,22,52,38,24];
+  var data=base.map(function(v,i){var ex=ratings.filter(function(r){return Math.round(r.rating*2)===i+1;}).length*8;return{lbl:((i+1)*0.5).toFixed(1).replace('.0',''),v:v+ex};});
+  var mx=Math.max.apply(null,data.map(function(d){return d.v;}));
+  el.innerHTML=data.map(function(d){var h=Math.max(4,Math.round((d.v/mx)*58));var op=(0.3+0.7*(d.v/mx)).toFixed(2);return '<div class="hb-col"><div class="hb-bar" style="height:'+h+'px;background:'+TC+';opacity:'+op+';"></div><div class="hb-lbl">'+d.lbl+'</div></div>';}).join('');
+  var sl=document.getElementById('histStarL');var sr=document.getElementById('histStarsR');
+  if(sl)sl.style.color=TC;if(sr)sr.querySelectorAll('span').forEach(function(s){s.style.color=TC;});
+}
+renderHist();
+
+function setTheme(c1,c2,c3,dark){
+  TC=c1;TCD=dark||'#001a10';
+  document.documentElement.style.setProperty('--tc',c1);
+  document.documentElement.style.setProperty('--tc-dark',TCD);
+  document.getElementById('prB1').style.background=c1;
+  document.getElementById('prB2').style.background=c2;
+  document.getElementById('prB3').style.background=c3;
+  document.querySelectorAll('.cdot').forEach(function(d){d.classList.toggle('on',d.style.background===c1);});
+  renderHist();
+}
+function openAchModal(icon,title,desc,rCls,rLbl){
+  document.getElementById('achIcon').textContent=icon;
+  document.getElementById('achTitle').textContent=title;
+  document.getElementById('achDesc').textContent=desc;
+  var b=document.getElementById('achBadge');b.textContent=rLbl;b.className='ach-rarity '+rCls;
+  document.getElementById('achModal').classList.add('open');
+}
+function showScreen(name){
+  if(name!=='book')prevScreen=name;
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('screen-'+name).classList.add('active');
+  ['home','search','friends','profile'].forEach(function(n){var b=document.getElementById('nav-'+n);if(b)b.classList.toggle('active',n===name);});
+}
+function goBack(){showScreen(prevScreen);}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function safeJson(obj){return JSON.stringify(obj).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function randomGrad(seed){var g=['linear-gradient(145deg,#1a2a5a,#3a1a5a)','linear-gradient(145deg,#5a1a1a,#8a2020)','linear-gradient(145deg,#1a5a2a,#2a8a3a)','linear-gradient(145deg,#5a4a1a,#8a6a1a)','linear-gradient(145deg,#1a4a5a,#1a6a8a)','linear-gradient(145deg,#5a1a3a,#8a1a5a)','linear-gradient(145deg,#3a1a5a,#5a1a8a)'];var n=0;for(var i=0;i<(seed||'').length;i++)n+=seed.charCodeAt(i);return g[n%g.length];}
+
+document.getElementById('rateModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+document.getElementById('achModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+loadHomepage();
+</script>
+</body>
+</html>
