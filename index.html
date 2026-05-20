@@ -556,7 +556,7 @@ function onSearchInput(val){
 function searchGenre(genre){showScreen('search');document.getElementById('searchInput').value=genre;doSearch(genre);}
 
 function doSearch(q){
-  var url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&maxResults=18&langRestrict=en';
+  var url='https://www.googleapis.com/books/v1/volumes?key=AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg&q='+encodeURIComponent(q)+'&maxResults=18&langRestrict=en';
   fetch(url)
     .then(function(r){return r.json();})
     .then(function(data){
