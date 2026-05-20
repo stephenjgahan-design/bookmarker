@@ -2,298 +2,439 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Bookmarker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#0c0e14;--bg2:#13151c;--bg3:#1a1d26;--bg4:#20232e;--border:rgba(255,255,255,0.07);--text:#f0f0f0;--text2:#9a9aaa;--text3:#55566a;--star:#e8c84a;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
 button,input,textarea,select{font-family:'DM Sans',sans-serif;cursor:pointer;}
-.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto;position:relative;background:var(--bg);}
-.screen{display:none;flex-direction:column;flex:1;padding-bottom:70px;}
+img{display:block;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes popIn{0%{transform:scale(0.8);opacity:0;}70%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.anim-fade-up{animation:fadeUp 0.35s ease both;}
+.anim-fade-in{animation:fadeIn 0.25s ease both;}
+.anim-slide-up{animation:slideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;}
+.anim-pop{animation:popIn 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+
+/* SKELETON LOADER */
+.skel{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+.skel-cover{aspect-ratio:2/3;border-radius:10px;margin-bottom:6px;}
+.skel-line{height:10px;border-radius:4px;margin-bottom:6px;}
+.skel-line.short{width:60%;}
+
+/* LAYOUT */
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto;background:var(--bg);}
+.screen{display:none;flex-direction:column;flex:1;padding-bottom:70px;min-height:calc(100vh - 70px);}
 .screen.active{display:flex;}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(13,15,22,0.97);backdrop-filter:blur(20px);border-top:0.5px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100;}
-.nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--text3);font-size:10px;transition:color 0.2s;padding:0 12px;}
-.nav-btn.active{color:var(--tc);}
-.nav-btn svg{width:22px;height:22px;}
-.top-bar{padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(12,14,20,0.95);backdrop-filter:blur(16px);z-index:50;border-bottom:0.5px solid var(--border);}
+.sa{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,12,18,0.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:0.5px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100;}
+.nb{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--text3);font-size:10px;padding:0 10px;transition:color 0.2s,transform 0.15s;}
+.nb:active{transform:scale(0.9);}
+.nb.on{color:var(--tc);}
+.nb svg{width:22px;height:22px;}
+.nb-dot{width:5px;height:5px;border-radius:50%;background:var(--tc);margin:0 auto;opacity:0;transition:opacity 0.2s;}
+.nb.on .nb-dot{opacity:1;}
+
+/* TOP BAR */
+.tbar{padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(10,12,18,0.95);backdrop-filter:blur(20px);z-index:50;border-bottom:0.5px solid var(--border);}
 .logo{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);letter-spacing:-0.5px;}
-.logo span{color:var(--tc);font-style:italic;}
-.sib{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:11px 16px;transition:border-color 0.2s;}
-.sib:focus-within{border-color:var(--tc);}
+.logo em{color:var(--tc);font-style:italic;}
+
+/* SEARCH INPUT */
+.sib{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:11px 16px;transition:border-color 0.2s,box-shadow 0.2s;}
+.sib:focus-within{border-color:var(--tc);box-shadow:0 0 0 3px rgba(93,202,165,0.12);}
 .sib svg{width:18px;height:18px;color:var(--text3);flex-shrink:0;}
 .sib input{background:none;border:none;color:var(--text);font-size:14px;flex:1;outline:none;}
 .sib input::placeholder{color:var(--text3);}
-.sec-title{font-size:11px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:0 18px;margin-bottom:12px;}
-.hero-card{border-radius:18px;overflow:hidden;position:relative;cursor:pointer;}
-.hero-img{width:100%;height:220px;object-fit:cover;display:block;}
-.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92) 40%,transparent 80%);}
-.hero-content{position:absolute;bottom:0;left:0;right:0;padding:16px;}
-.hero-badge{display:inline-block;background:var(--tc);color:var(--tc-dark);font-size:10px;font-weight:700;border-radius:8px;padding:3px 8px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
-.hero-title{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;margin-bottom:2px;line-height:1.2;}
-.hero-author{font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:8px;}
-.hero-rating{display:flex;align-items:center;gap:6px;}
-.hero-avg{font-size:18px;font-weight:700;color:#fff;}
-.hero-cnt{font-size:11px;color:rgba(255,255,255,0.4);}
-.genre-scroll{display:flex;gap:0;overflow-x:auto;padding:0 18px;margin-bottom:16px;border-bottom:0.5px solid var(--border);scrollbar-width:none;}
-.genre-scroll::-webkit-scrollbar{display:none;}
-.genre-tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 12px 10px;cursor:pointer;flex-shrink:0;border-bottom:2px solid transparent;}
-.genre-tab.active{border-bottom-color:var(--tc);}
-.gtcov{width:52px;height:78px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
-.gtcov img{width:100%;height:100%;object-fit:cover;display:block;}
-.gtname{font-size:11px;color:var(--text3);}
-.genre-tab.active .gtname{color:var(--text);}
+
+/* HERO */
+.hero-card{border-radius:18px;overflow:hidden;position:relative;cursor:pointer;transition:transform 0.2s;}
+.hero-card:active{transform:scale(0.98);}
+.hero-img{width:100%;height:230px;object-fit:cover;background:var(--bg3);}
+.hero-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.93) 40%,rgba(0,0,0,0.1) 80%);}
+.hero-ct{position:absolute;bottom:0;left:0;right:0;padding:18px;}
+.hero-badge{display:inline-block;background:var(--tc);color:var(--tc-dark);font-size:10px;font-weight:700;border-radius:8px;padding:3px 9px;margin-bottom:7px;text-transform:uppercase;letter-spacing:0.5px;}
+.hero-title{font-family:'DM Serif Display',serif;font-size:21px;color:#fff;margin-bottom:3px;line-height:1.2;}
+.hero-author{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:9px;}
+.hero-stars{display:flex;align-items:center;gap:6px;}
+.hero-avg{font-size:20px;font-weight:700;color:#fff;}
+.hero-cnt{font-size:11px;color:rgba(255,255,255,0.45);}
+
+/* GENRE TABS */
+.gtabs{display:flex;overflow-x:auto;padding:0 18px;border-bottom:0.5px solid var(--border);scrollbar-width:none;}
+.gtabs::-webkit-scrollbar{display:none;}
+.gtab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 10px 10px;cursor:pointer;flex-shrink:0;border-bottom:2px solid transparent;transition:border-color 0.2s;}
+.gtab.on{border-bottom-color:var(--tc);}
+.gtcov{width:52px;height:78px;border-radius:8px;overflow:hidden;background:var(--bg3);transition:transform 0.2s;}
+.gtab:active .gtcov{transform:scale(0.93);}
+.gtcov img{width:100%;height:100%;object-fit:cover;}
+.gtname{font-size:11px;color:var(--text3);transition:color 0.2s;}
+.gtab.on .gtname{color:var(--text);}
+
+/* BOOK GRIDS */
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px;margin-bottom:20px;}
-.grid3-item{cursor:pointer;}
-.grid3-cover{width:100%;aspect-ratio:2/3;border-radius:10px;margin-bottom:6px;object-fit:cover;background:var(--bg3);display:block;}
-.grid3-title{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:3px;}
-.grid3-rating{font-size:11px;color:var(--tc);}
-.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px;}
-.result-item{cursor:pointer;position:relative;}
-.result-cover{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--bg3);margin-bottom:6px;display:block;}
-.result-title{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.result-author{font-size:10px;color:var(--text3);}
-.wl-btn-sm{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.65);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;z-index:2;}
-.loading-msg{text-align:center;color:var(--text3);padding:40px 18px;font-size:14px;}
-.back-bar{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);}
-.back-left{display:flex;align-items:center;gap:8px;cursor:pointer;}
-.back-bar svg{width:18px;height:18px;color:var(--text3);}
-.back-bar span{font-size:13px;color:var(--text3);}
-.book-hero{padding:18px;display:flex;gap:14px;border-bottom:0.5px solid var(--border);}
-.book-cover-lg{width:100px;height:150px;border-radius:12px;object-fit:cover;background:var(--bg3);flex-shrink:0;display:block;}
-.book-meta{flex:1;min-width:0;}
-.book-title-lg{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);line-height:1.25;margin-bottom:4px;}
-.book-author-lg{font-size:12px;color:var(--text3);margin-bottom:10px;}
-.frac-stars{display:flex;gap:2px;margin-bottom:4px;}
-.frac-star{position:relative;display:inline-block;font-size:22px;line-height:1;}
-.frac-star .bg{color:#2a2a35;}
-.frac-star .fg{color:var(--star);position:absolute;top:0;left:0;overflow:hidden;}
-.avg-num{font-size:32px;font-weight:700;color:var(--text);line-height:1;margin-bottom:2px;}
-.rating-cnt{font-size:11px;color:var(--text3);margin-bottom:12px;}
-.buy-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#4285f4;color:#fff;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:600;width:100%;text-decoration:none;margin-bottom:8px;}
-.wl-big-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:12px;padding:10px;font-size:13px;font-weight:500;width:100%;cursor:pointer;}
-.wl-big-btn.in{color:var(--tc);border-color:var(--tc);background:rgba(93,202,165,0.08);}
-.bsec{padding:16px 18px;border-bottom:0.5px solid var(--border);}
-.bsec-title{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
-.ai-pill{font-size:9px;background:var(--bg4);border:0.5px solid var(--border);color:var(--text3);border-radius:8px;padding:2px 7px;}
-.summary-text{font-size:13px;color:var(--text2);line-height:1.65;}
-.theme-pills{display:flex;gap:6px;flex-wrap:wrap;}
-.theme-pill{font-size:11px;color:var(--text2);background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:5px 11px;}
-.tone-item{margin-bottom:10px;}
+.gi{cursor:pointer;transition:transform 0.15s;}
+.gi:active{transform:scale(0.95);}
+.gcov{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--bg3);margin-bottom:6px;}
+.gtitle{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:3px;}
+.grating{font-size:11px;color:var(--tc);}
+
+/* SEARCH RESULTS */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px;}
+.ri{cursor:pointer;position:relative;transition:transform 0.15s;}
+.ri:active{transform:scale(0.95);}
+.rcov{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--bg3);margin-bottom:6px;}
+.rtitle{font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.rauthor{font-size:10px;color:var(--text3);}
+.wlbtn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:transform 0.15s,background 0.2s;}
+.wlbtn:active{transform:scale(0.85);}
+.wlbtn.on{background:rgba(93,202,165,0.25);}
+
+/* SORT BAR */
+.sbar{display:flex;align-items:center;gap:8px;padding:8px 18px;border-bottom:0.5px solid var(--border);}
+.slbl{font-size:11px;color:var(--text3);}
+.ssel{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;padding:5px 9px;outline:none;}
+
+/* LOADING / EMPTY */
+.lmsg{text-align:center;color:var(--text3);padding:48px 18px;font-size:14px;}
+.spin{width:24px;height:24px;border:2px solid var(--bg4);border-top-color:var(--tc);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+
+/* BOOK PAGE */
+.bkhero{padding:18px;display:flex;gap:14px;border-bottom:0.5px solid var(--border);}
+.bkcov{width:100px;height:150px;border-radius:12px;object-fit:cover;background:var(--bg3);flex-shrink:0;transition:transform 0.2s;}
+.bkcov:active{transform:scale(0.96);}
+.bkmeta{flex:1;min-width:0;}
+.bktitle{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);line-height:1.25;margin-bottom:4px;}
+.bkauth{font-size:12px;color:var(--text3);margin-bottom:9px;}
+.fstars{display:flex;gap:2px;margin-bottom:4px;}
+.fs{position:relative;display:inline-block;font-size:21px;line-height:1;}
+.fs .bg{color:#2a2a35;}
+.fs .fg{color:var(--star);position:absolute;top:0;left:0;overflow:hidden;}
+.avgnum{font-size:34px;font-weight:700;color:var(--text);line-height:1;margin-bottom:2px;}
+.rcnt{font-size:11px;color:var(--text3);margin-bottom:12px;}
+.buybtn{display:flex;align-items:center;justify-content:center;gap:8px;background:#4285f4;color:#fff;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:600;width:100%;text-decoration:none;margin-bottom:8px;transition:opacity 0.2s,transform 0.15s;}
+.buybtn:active{opacity:0.85;transform:scale(0.98);}
+.wlbig{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:12px;padding:10px;font-size:13px;width:100%;transition:all 0.2s,transform 0.15s;}
+.wlbig:active{transform:scale(0.97);}
+.wlbig.on{color:var(--tc);border-color:var(--tc);background:rgba(93,202,165,0.08);}
+.bsec{padding:14px 18px;border-bottom:0.5px solid var(--border);}
+.bsec-t{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.aipill{font-size:9px;background:var(--bg4);border:0.5px solid var(--border);color:var(--text3);border-radius:8px;padding:2px 7px;}
+.seeall{font-size:10px;color:var(--tc);background:none;border:0.5px solid var(--tc);border-radius:10px;padding:3px 10px;transition:opacity 0.2s;}
+.sumtext{font-size:13px;color:var(--text2);line-height:1.65;}
+.tpills{display:flex;gap:6px;flex-wrap:wrap;}
+.tpill{font-size:11px;color:var(--text2);background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:5px 11px;cursor:pointer;transition:background 0.15s;}
+.tpill:active{background:var(--bg4);}
+.tone-item{margin-bottom:9px;}
 .tone-hdr{display:flex;justify-content:space-between;margin-bottom:5px;}
 .tone-lbl{font-size:11px;font-weight:500;}
-.tone-track{height:5px;background:var(--bg4);border-radius:3px;}
-.tone-fill{height:5px;border-radius:3px;}
-.rev-item{margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border);}
-.rev-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
-.rev-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
-.rev-name{font-size:12px;font-weight:600;color:var(--text);}
-.rev-pill{font-size:9px;background:var(--bg3);color:var(--text3);border-radius:8px;padding:2px 7px;}
-.rev-stars-sm{font-size:12px;color:var(--star);margin-bottom:4px;}
-.rev-body{font-size:12px;color:var(--text3);line-height:1.5;}
-.rev-date{font-size:10px;color:var(--text3);margin-top:4px;}
-.rate-sticky{position:sticky;bottom:70px;background:rgba(13,15,22,0.97);backdrop-filter:blur(12px);border-top:0.5px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;z-index:40;}
+.tone-tr{height:5px;background:var(--bg4);border-radius:3px;}
+.tone-f{height:5px;border-radius:3px;animation:fadeIn 0.5s ease both;}
+.revi{margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border);animation:fadeUp 0.3s ease both;}
+.revi:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.revhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.revname{font-size:12px;font-weight:600;color:var(--text);}
+.revpill{font-size:9px;background:var(--bg3);color:var(--text3);border-radius:8px;padding:2px 7px;}
+.revstars{font-size:12px;color:var(--star);margin-bottom:4px;}
+.revbody{font-size:12px;color:var(--text3);line-height:1.5;}
+.revdate{font-size:10px;color:var(--text3);margin-top:3px;}
+.rate-sticky{position:sticky;bottom:70px;background:rgba(10,12,18,0.97);backdrop-filter:blur(12px);border-top:0.5px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;z-index:40;}
 .rate-sticky-lbl{font-size:12px;color:var(--text3);}
-.rate-sticky-btn{background:var(--tc);color:var(--tc-dark);border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:flex-end;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;border-top:0.5px solid var(--border);padding:16px 18px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;position:relative;}
-.modal-handle{width:32px;height:3px;background:var(--bg4);border-radius:2px;margin:0 auto 16px;}
-.modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:4px;text-align:center;}
-.modal-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:16px;}
-.half-star-row{display:flex;justify-content:center;gap:2px;margin-bottom:8px;}
-.hs-zone{position:relative;width:44px;height:50px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.hs-left{position:absolute;left:0;width:22px;height:50px;z-index:2;}
-.hs-right{position:absolute;right:0;width:22px;height:50px;z-index:2;}
-.hs-icon{font-size:40px;pointer-events:none;transition:all 0.1s;}
-.rating-lbl{text-align:center;font-size:14px;font-weight:600;color:var(--tc);margin-bottom:14px;min-height:20px;}
-.review-ta{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;padding:12px;resize:none;height:80px;margin-bottom:14px;outline:none;}
-.review-ta:focus{border-color:var(--tc);}
-.review-ta::placeholder{color:var(--text3);}
-.priv-toggle{display:flex;background:var(--bg3);border-radius:20px;overflow:hidden;margin-bottom:10px;}
-.priv-opt{flex:1;padding:9px;font-size:12px;color:var(--text3);cursor:pointer;text-align:center;border:none;background:none;display:flex;align-items:center;justify-content:center;gap:5px;font-family:'DM Sans',sans-serif;}
-.priv-opt.on{background:var(--bg4);color:var(--text);border-radius:20px;}
-.priv-note{font-size:11px;color:var(--text3);text-align:center;margin-bottom:16px;}
-.save-btn{width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:16px;padding:14px;font-size:15px;font-weight:700;}
-.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:13px 16px;outline:none;margin-bottom:10px;}
-.auth-input:focus{border-color:var(--tc);}
-.auth-input::placeholder{color:var(--text3);}
-.auth-btn{width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;margin-bottom:10px;}
-.google-btn{width:100%;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:13px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;}
-.divider{display:flex;align-items:center;gap:10px;margin:4px 0 10px;}
-.divider-line{flex:1;height:0.5px;background:var(--border);}
-.divider-txt{font-size:11px;color:var(--text3);}
-.auth-alt{text-align:center;font-size:13px;color:var(--text3);margin-top:4px;}
-.auth-alt span{color:var(--tc);cursor:pointer;text-decoration:underline;}
-.fb-banner{padding:18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);}
-.fb-blob{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.3;pointer-events:none;}
-.fb-inner{position:relative;z-index:1;}
-.fb-row{display:flex;gap:12px;align-items:center;margin-bottom:10px;}
-.fb-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.15);}
-.fb-name{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);margin-bottom:2px;}
-.fb-sub{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;}
-.fb-quote{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic;line-height:1.5;}
-.fb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.fb-chip{font-size:10px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:3px 9px;color:rgba(255,255,255,0.55);}
-.pr-banner{padding:24px 18px 18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);}
-.pr-blob{position:absolute;border-radius:50%;filter:blur(50px);opacity:0.35;pointer-events:none;}
-.pr-inner{position:relative;z-index:1;}
-.pr-av{width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin:0 auto 10px;}
-.pr-name{font-family:'DM Serif Display',serif;font-size:22px;color:#fff;text-align:center;margin-bottom:2px;}
-.pr-join{font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:14px;}
+.ratebtn{background:var(--tc);color:var(--tc-dark);border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;transition:transform 0.15s,opacity 0.2s;}
+.ratebtn:active{transform:scale(0.95);}
+
+/* BACK BAR */
+.backbar{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);}
+.backleft{display:flex;align-items:center;gap:8px;cursor:pointer;transition:opacity 0.2s;}
+.backleft:active{opacity:0.6;}
+.backbar svg{width:18px;height:18px;color:var(--text3);}
+.backbar span{font-size:13px;color:var(--text3);}
+
+/* MODALS */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.mov.open{display:flex;}
+.msheet{background:var(--bg2);border-radius:24px 24px 0 0;border-top:0.5px solid var(--border);padding:16px 18px 36px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;position:relative;animation:slideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;}
+.mhandle{width:36px;height:3px;background:var(--bg4);border-radius:2px;margin:0 auto 18px;}
+.mtitle{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px;text-align:center;}
+.msub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:18px;}
+.ai{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:13px 16px;outline:none;margin-bottom:10px;transition:border-color 0.2s,box-shadow 0.2s;}
+.ai:focus{border-color:var(--tc);box-shadow:0 0 0 3px rgba(93,202,165,0.1);}
+.ai::placeholder{color:var(--text3);}
+.abtn{width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;margin-bottom:10px;transition:transform 0.15s,opacity 0.2s;}
+.abtn:active{transform:scale(0.97);}
+.gbtn{width:100%;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:13px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:background 0.15s,transform 0.15s;}
+.gbtn:active{background:var(--bg4);transform:scale(0.97);}
+.divrow{display:flex;align-items:center;gap:10px;margin:4px 0 10px;}
+.divline{flex:1;height:0.5px;background:var(--border);}
+.divtxt{font-size:11px;color:var(--text3);}
+.aalt{text-align:center;font-size:13px;color:var(--text3);margin-top:6px;}
+.aalt span{color:var(--tc);cursor:pointer;text-decoration:underline;}
+
+/* RATE MODAL */
+.hsr{display:flex;justify-content:center;gap:4px;margin-bottom:10px;}
+.hsz{position:relative;width:48px;height:54px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.hsl{position:absolute;left:0;width:24px;height:54px;z-index:2;}
+.hsr2{position:absolute;right:0;width:24px;height:54px;z-index:2;}
+.hsi{font-size:44px;pointer-events:none;transition:color 0.12s;}
+.rlbl{text-align:center;font-size:14px;font-weight:600;color:var(--tc);margin-bottom:14px;min-height:22px;}
+.rta{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;padding:12px;resize:none;height:84px;margin-bottom:14px;outline:none;transition:border-color 0.2s;}
+.rta:focus{border-color:var(--tc);}
+.rta::placeholder{color:var(--text3);}
+.ptog{display:flex;background:var(--bg3);border-radius:20px;overflow:hidden;margin-bottom:10px;}
+.po{flex:1;padding:9px;font-size:12px;color:var(--text3);border:none;background:none;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s;}
+.po.on{background:var(--bg4);color:var(--text);border-radius:20px;}
+.pnote{font-size:11px;color:var(--text3);text-align:center;margin-bottom:16px;}
+.savebtn{width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:16px;padding:14px;font-size:15px;font-weight:700;transition:transform 0.15s,opacity 0.2s;}
+.savebtn:active{transform:scale(0.97);}
+
+/* FRIENDS */
+.frbanner{padding:18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);animation:fadeUp 0.3s ease both;}
+.frblob{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.28;pointer-events:none;}
+.frinner{position:relative;z-index:1;}
+.frow{display:flex;gap:12px;align-items:center;margin-bottom:10px;}
+.frav{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.15);}
+.frname{font-family:'DM Serif Display',serif;font-size:16px;color:#fff;margin-bottom:2px;}
+.frsub{font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:4px;}
+.frquote{font-size:12px;color:rgba(255,255,255,0.65);font-style:italic;line-height:1.5;}
+.frchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+.frchip{font-size:10px;background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:3px 9px;color:rgba(255,255,255,0.6);}
+
+/* FRIEND REQUESTS */
+.freq{background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;animation:fadeUp 0.3s ease both;}
+.freqav{width:42px;height:42px;border-radius:50%;background:var(--tc);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--tc-dark);flex-shrink:0;}
+.freqname{font-size:13px;color:var(--text);font-weight:500;margin-bottom:2px;}
+.freqsub{font-size:11px;color:var(--text3);}
+.freq-actions{display:flex;gap:6px;margin-left:auto;}
+.freq-accept{background:var(--tc);color:var(--tc-dark);border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:600;transition:transform 0.15s;}
+.freq-accept:active{transform:scale(0.93);}
+.freq-decline{background:var(--bg4);color:var(--text3);border:none;border-radius:10px;padding:6px 10px;font-size:12px;transition:transform 0.15s;}
+.freq-decline:active{transform:scale(0.93);}
+.fcard{background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s,transform 0.15s;animation:fadeUp 0.3s ease both;}
+.fcard:active{background:var(--bg4);transform:scale(0.98);}
+.fcardav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;}
+.fcardname{font-size:13px;color:var(--text);font-weight:500;margin-bottom:2px;}
+.fcardsub{font-size:11px;color:var(--text3);}
+.fcardstats{margin-left:auto;text-align:right;}
+.fcardstat-n{font-size:15px;font-weight:600;color:var(--text);}
+.fcardstat-l{font-size:9px;color:var(--text3);text-transform:uppercase;}
+
+/* PROFILE */
+.prhero{padding:24px 18px 18px;position:relative;overflow:hidden;border-bottom:0.5px solid var(--border);}
+.prblob{position:absolute;border-radius:50%;filter:blur(50px);opacity:0.35;pointer-events:none;}
+.prinner{position:relative;z-index:1;}
+.prav{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:26px;color:#fff;margin:0 auto 10px;}
+.prname{font-family:'DM Serif Display',serif;font-size:23px;color:#fff;text-align:center;margin-bottom:2px;}
+.prjoin{font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:14px;}
 .cdots{display:flex;gap:10px;justify-content:center;margin-bottom:14px;}
-.cdot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:border-color 0.2s;}
+.cdot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:border-color 0.2s,transform 0.15s;}
+.cdot:active{transform:scale(0.85);}
 .cdot.on{border-color:#fff;}
-.pr-stats{display:flex;gap:10px;}
-.pr-stat{flex:1;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 8px;text-align:center;}
-.pr-stat-n{font-size:22px;font-weight:700;color:#fff;}
-.pr-stat-l{font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
-.hist-outer{display:flex;align-items:flex-end;gap:10px;}
-.hist-bars{display:flex;align-items:flex-end;gap:4px;flex:1;}
-.hb-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
-.hb-bar{width:100%;border-radius:3px 3px 0 0;min-height:4px;}
-.hb-lbl{font-size:8px;color:var(--text3);}
-.ach-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
-.ach-scroll::-webkit-scrollbar{display:none;}
-.ach-card{flex-shrink:0;width:90px;background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;}
-.ach-card.locked{opacity:0.35;}
-.ach-card-icon{font-size:26px;margin-bottom:6px;}
-.ach-card-name{font-size:10px;color:var(--text2);line-height:1.3;margin-bottom:5px;}
-.ach-rarity{font-size:9px;border-radius:8px;padding:2px 6px;display:inline-block;}
-.r-common{background:#221408;color:#c8784a;}.r-uncommon{background:var(--bg4);color:#aaa;}.r-rare{background:#2a1a04;color:#e8c84a;}.r-legendary{background:#2a1a00;color:#e8c84a;}
-.wl-item{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer;}
-.wl-item:last-child{border-bottom:none;}
-.wl-cover{width:44px;height:66px;border-radius:7px;object-fit:cover;background:var(--bg3);flex-shrink:0;}
-.wl-remove{background:none;border:none;color:var(--text3);font-size:18px;padding:4px;margin-left:auto;cursor:pointer;}
-.sort-bar{display:flex;align-items:center;gap:8px;padding:8px 18px;border-bottom:0.5px solid var(--border);}
-.sort-label{font-size:11px;color:var(--text3);}
-.sort-sel{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;padding:4px 8px;outline:none;}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--tc);color:var(--tc-dark);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
-.toast.show{opacity:1;}
-.user-pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:5px 12px 5px 5px;cursor:pointer;}
-.user-pill-av{width:28px;height:28px;border-radius:50%;background:var(--tc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tc-dark);}
-.user-pill-name{font-size:12px;color:var(--text2);}
+.prstats{display:flex;gap:10px;}
+.prstat{flex:1;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 8px;text-align:center;}
+.prstatn{font-size:22px;font-weight:700;color:#fff;}
+.prstatl{font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+
+/* HISTOGRAM */
+.histouter{display:flex;align-items:flex-end;gap:10px;}
+.histbars{display:flex;align-items:flex-end;gap:4px;flex:1;}
+.hbcol{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.hbbar{width:100%;border-radius:3px 3px 0 0;min-height:4px;transition:height 0.4s ease;}
+.hblbl{font-size:8px;color:var(--text3);}
+
+/* ACHIEVEMENTS */
+.achscroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.achscroll::-webkit-scrollbar{display:none;}
+.achcard{flex-shrink:0;width:90px;background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:transform 0.15s,box-shadow 0.2s;}
+.achcard:active{transform:scale(0.92);}
+.achcard.locked{opacity:0.35;}
+.achcard-icon{font-size:26px;margin-bottom:6px;}
+.achcard-name{font-size:10px;color:var(--text2);line-height:1.3;margin-bottom:5px;}
+.rarity{font-size:9px;border-radius:8px;padding:2px 6px;display:inline-block;}
+.rc{background:#221408;color:#c8784a;}.ru{background:var(--bg4);color:#aaa;}.rr{background:#2a1a04;color:#e8c84a;}.rl{background:#2a1a00;color:#e8c84a;}
+
+/* WISHLIST */
+.wlitem{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;animation:fadeUp 0.25s ease both;}
+.wlitem:active{opacity:0.7;}
+.wlitem:last-child{border-bottom:none;}
+.wlcov{width:44px;height:66px;border-radius:7px;object-fit:cover;background:var(--bg3);flex-shrink:0;}
+.wlrm{background:none;border:none;color:var(--text3);font-size:18px;padding:4px;margin-left:auto;cursor:pointer;transition:transform 0.15s;}
+.wlrm:active{transform:scale(0.8);}
+
+/* USER PILL */
+.upill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:5px 12px 5px 5px;cursor:pointer;transition:background 0.15s;}
+.upill:active{background:var(--bg4);}
+.upillav{width:28px;height:28px;border-radius:50%;background:var(--tc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tc-dark);}
+.upillname{font-size:12px;color:var(--text2);}
+
+/* NOTIFICATION BADGE */
+.nbadge{position:absolute;top:-2px;right:-2px;background:#e24b4a;border-radius:50%;width:8px;height:8px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--tc);color:var(--tc-dark);border-radius:12px;padding:10px 22px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+/* SECTION TITLE */
+.stitle{font-size:11px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:0 18px;margin-bottom:12px;}
 </style>
 </head>
 <body>
 <div class="app">
 
 <!-- HOME -->
-<div class="screen active" id="screen-home">
-  <div class="top-bar"><div class="logo">book<span>marker</span></div><div id="authPill"></div></div>
-  <div style="flex:1;overflow-y:auto;">
+<div class="screen active" id="S-home">
+  <div class="tbar"><div class="logo">book<em>marker</em></div><div id="authPill"></div></div>
+  <div class="sa">
     <div style="padding:16px 18px 0;">
-      <div class="sec-title" style="padding:0;margin-bottom:10px;">For you</div>
-      <div id="heroCard" style="margin-bottom:18px;"><div class="hero-card"><div class="hero-img" style="background:linear-gradient(145deg,#1a2a5a,#3a1a5a);height:220px;"></div><div class="hero-overlay"></div><div class="hero-content"><div class="hero-badge">Top pick this week</div><div class="hero-title" style="color:#666;">Loading...</div></div></div></div>
+      <div class="stitle" style="padding:0;margin-bottom:10px;">For you</div>
+      <div id="heroWrap" style="margin-bottom:18px;"><div class="skel skel-cover" style="height:230px;border-radius:18px;"></div></div>
     </div>
-    <div class="sec-title">Your genres</div>
-    <div class="genre-scroll">
-      <div class="genre-tab active" onclick="loadGenre('crime thriller',this)"><div class="gtcov" id="gc0"></div><div class="gtname">Crime</div></div>
-      <div class="genre-tab" onclick="loadGenre('science fiction',this)"><div class="gtcov" id="gc1"></div><div class="gtname">Sci-Fi</div></div>
-      <div class="genre-tab" onclick="loadGenre('historical fiction',this)"><div class="gtcov" id="gc2"></div><div class="gtname">History</div></div>
-      <div class="genre-tab" onclick="loadGenre('romance novel',this)"><div class="gtcov" id="gc3"></div><div class="gtname">Romance</div></div>
-      <div class="genre-tab" onclick="loadGenre('horror fiction',this)"><div class="gtcov" id="gc4"></div><div class="gtname">Horror</div></div>
-      <div class="genre-tab" onclick="loadGenre('literary fiction',this)"><div class="gtcov" id="gc5"></div><div class="gtname">Literary</div></div>
+    <div class="stitle">Your genres</div>
+    <div class="gtabs" id="genreTabs">
+      <div class="gtab on" onclick="loadGenre('crime thriller',this)"><div class="gtcov" id="gc0"></div><div class="gtname">Crime</div></div>
+      <div class="gtab" onclick="loadGenre('science fiction',this)"><div class="gtcov" id="gc1"></div><div class="gtname">Sci-Fi</div></div>
+      <div class="gtab" onclick="loadGenre('historical fiction',this)"><div class="gtcov" id="gc2"></div><div class="gtname">History</div></div>
+      <div class="gtab" onclick="loadGenre('romance novel',this)"><div class="gtcov" id="gc3"></div><div class="gtname">Romance</div></div>
+      <div class="gtab" onclick="loadGenre('horror fiction',this)"><div class="gtcov" id="gc4"></div><div class="gtname">Horror</div></div>
+      <div class="gtab" onclick="loadGenre('literary fiction',this)"><div class="gtcov" id="gc5"></div><div class="gtname">Literary</div></div>
     </div>
-    <div class="sec-title" id="homeGridLabel">Recommended for you</div>
-    <div class="grid3" id="homeGrid"><div style="grid-column:1/-1;" class="loading-msg">Loading...</div></div>
+    <div class="stitle" id="gridLabel" style="margin-top:14px;">Recommended for you</div>
+    <div class="grid3" id="homeGrid">
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+      <div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>
+    </div>
   </div>
 </div>
 
 <!-- SEARCH -->
-<div class="screen" id="screen-search">
-  <div class="top-bar"><div class="logo">book<span>marker</span></div></div>
-  <div style="padding:12px 18px 0;"><div class="sib"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="searchInput" placeholder="Search for any book..." oninput="onSearchInput(this.value)"/></div></div>
-  <div class="sort-bar"><span class="sort-label">Sort by:</span><select class="sort-sel" id="sortSel" onchange="reSort()"><option value="relevance">Most relevant</option><option value="newest">Newest first</option></select></div>
-  <div style="flex:1;overflow-y:auto;"><div id="searchResults" class="results-grid" style="padding-top:8px;"></div><div id="searchMsg" class="loading-msg">Start typing to search millions of books</div></div>
+<div class="screen" id="S-search">
+  <div class="tbar"><div class="logo">book<em>marker</em></div></div>
+  <div style="padding:12px 18px 0;"><div class="sib"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="searchIn" placeholder="Search for any book..." oninput="onSI(this.value)" autocomplete="off"/></div></div>
+  <div class="sbar"><span class="slbl">Sort by:</span><select class="ssel" id="sortSel" onchange="reSort()"><option value="relevance">Most popular</option><option value="newest">Newest first</option></select></div>
+  <div class="sa"><div id="searchRes" class="rgrid" style="padding-top:8px;"></div><div id="searchMsg" class="lmsg">Start typing to search millions of books</div></div>
 </div>
 
-<!-- BOOK DETAIL -->
-<div class="screen" id="screen-book">
-  <div class="back-bar"><div class="back-left" onclick="goBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Back</span></div><button id="wlTopBtn" onclick="toggleWishlist()" style="background:none;border:none;font-size:22px;opacity:0.4;" title="Add to wishlist">🔖</button></div>
-  <div style="flex:1;overflow-y:auto;" id="bookContent"></div>
-  <div class="rate-sticky"><div class="rate-sticky-lbl">Loved it? Hated it?</div><button class="rate-sticky-btn" onclick="openRateModal()">&#9733; Rate this book</button></div>
+<!-- BOOK -->
+<div class="screen" id="S-book">
+  <div class="backbar"><div class="backleft" onclick="goBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Back</span></div><button id="wlTopBtn" onclick="toggleWL()" style="background:none;border:none;font-size:22px;opacity:0.4;transition:opacity 0.2s;transform-origin:center;" title="Wishlist">&#128278;</button></div>
+  <div class="sa" id="bookContent"></div>
+  <div class="rate-sticky"><div class="rate-sticky-lbl">Your thoughts?</div><button class="ratebtn" onclick="openRate()">&#9733; Rate this book</button></div>
 </div>
 
 <!-- FRIENDS -->
-<div class="screen" id="screen-friends">
-  <div class="top-bar"><div class="logo">book<span>marker</span></div><button onclick="showToast('Invite link coming soon!')" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:6px 10px;color:var(--tc);font-size:12px;font-weight:600;">+ Add friend</button></div>
-  <div style="flex:1;overflow-y:auto;" id="friendsContent"><div class="loading-msg">Loading...</div></div>
+<div class="screen" id="S-friends">
+  <div class="tbar">
+    <div class="logo">book<em>marker</em></div>
+    <button onclick="openAddFriend()" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:7px 12px;color:var(--tc);font-size:12px;font-weight:600;position:relative;transition:background 0.15s;">
+      + Add friend
+    </button>
+  </div>
+  <div class="sa" id="friendsContent"><div class="lmsg"><div class="spin"></div>Loading friends...</div></div>
 </div>
 
 <!-- PROFILE -->
-<div class="screen" id="screen-profile">
-  <div style="flex:1;overflow-y:auto;" id="profileContent">
-    <div style="padding:60px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">&#128218;</div><div style="font-size:18px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to Bookmarker</div><div style="font-size:13px;color:var(--text3);margin-bottom:24px;line-height:1.6;">Save ratings, write reviews,<br>and track every book you read</div><button onclick="openAuthModal()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px 32px;font-size:15px;font-weight:700;">Sign in or create account</button></div>
+<div class="screen" id="S-profile">
+  <div class="sa" id="profileContent">
+    <div style="padding:70px 20px;text-align:center;" class="anim-fade-up">
+      <div style="font-size:52px;margin-bottom:16px;">&#128218;</div>
+      <div style="font-size:20px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to Bookmarker</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.6;">Save ratings, write reviews<br>and track every book you read</div>
+      <button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px 36px;font-size:15px;font-weight:700;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">Sign in or create account</button>
+    </div>
   </div>
 </div>
 
-</div>
+</div><!-- end app -->
 
-<nav class="bottom-nav">
-  <button class="nav-btn active" id="nav-home" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home</button>
-  <button class="nav-btn" id="nav-search" onclick="showScreen('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search</button>
-  <button class="nav-btn" id="nav-friends" onclick="showScreen('friends')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>Friends</button>
-  <button class="nav-btn" id="nav-profile" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+<nav class="bnav">
+  <button class="nb on" id="nb-home" onclick="SS('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home<div class="nb-dot"></div></button>
+  <button class="nb" id="nb-search" onclick="SS('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<div class="nb-dot"></div></button>
+  <button class="nb" id="nb-friends" onclick="SS('friends')" style="position:relative;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>Friends<div class="nb-dot"></div><div class="nbadge" id="frReqBadge" style="display:none;"></div></button>
+  <button class="nb" id="nb-profile" onclick="SS('profile')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile<div class="nb-dot"></div></button>
 </nav>
 
 <!-- AUTH MODAL -->
-<div class="modal-overlay" id="authModal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <button onclick="closeModal('authModal')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
-    <div class="modal-title" id="authTitle">Sign in</div>
-    <div class="modal-sub" id="authSub">Welcome back to Bookmarker</div>
-    <button class="google-btn" onclick="doGoogleSignIn()"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continue with Google</button>
-    <div class="divider"><div class="divider-line"></div><div class="divider-txt">or</div><div class="divider-line"></div></div>
-    <input class="auth-input" type="email" id="authEmail" placeholder="Email address"/>
-    <input class="auth-input" type="password" id="authPassword" placeholder="Password"/>
-    <input class="auth-input" type="text" id="authName" placeholder="Your name" style="display:none;"/>
-    <div id="authError" style="font-size:12px;color:#e24b4a;text-align:center;margin-bottom:10px;min-height:16px;"></div>
-    <button class="auth-btn" id="authSubmitBtn" onclick="doEmailAuth()">Sign in</button>
-    <div class="auth-alt" id="authAlt">No account? <span onclick="toggleAuthMode()">Sign up free</span></div>
+<div class="mov" id="authMov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <button onclick="closeM('authMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle" id="authTitle">Sign in</div>
+    <div class="msub" id="authSub">Welcome back to Bookmarker</div>
+    <button class="gbtn" onclick="doGoogle()"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continue with Google</button>
+    <div class="divrow"><div class="divline"></div><div class="divtxt">or</div><div class="divline"></div></div>
+    <input class="ai" type="email" id="aEmail" placeholder="Email address"/>
+    <input class="ai" type="password" id="aPass" placeholder="Password"/>
+    <input class="ai" type="text" id="aName" placeholder="Your name" style="display:none;"/>
+    <div id="aErr" style="font-size:12px;color:#e24b4a;text-align:center;margin-bottom:10px;min-height:18px;"></div>
+    <button class="abtn" id="aBtn" onclick="doEmail()">Sign in</button>
+    <div class="aalt" id="aAlt">No account? <span onclick="toggleAuth()">Sign up free</span></div>
   </div>
 </div>
 
 <!-- RATE MODAL -->
-<div class="modal-overlay" id="rateModal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="rateModalTitle">Rate this book</div>
-    <div class="modal-sub">Left half of a star = half star rating</div>
-    <div class="half-star-row">
-      <div class="hs-zone"><div class="hs-left" onclick="setRating(0.5)"></div><div class="hs-right" onclick="setRating(1)"></div><span class="hs-icon" id="hsi1" style="color:#2a2a35;">&#9733;</span></div>
-      <div class="hs-zone"><div class="hs-left" onclick="setRating(1.5)"></div><div class="hs-right" onclick="setRating(2)"></div><span class="hs-icon" id="hsi2" style="color:#2a2a35;">&#9733;</span></div>
-      <div class="hs-zone"><div class="hs-left" onclick="setRating(2.5)"></div><div class="hs-right" onclick="setRating(3)"></div><span class="hs-icon" id="hsi3" style="color:#2a2a35;">&#9733;</span></div>
-      <div class="hs-zone"><div class="hs-left" onclick="setRating(3.5)"></div><div class="hs-right" onclick="setRating(4)"></div><span class="hs-icon" id="hsi4" style="color:#2a2a35;">&#9733;</span></div>
-      <div class="hs-zone"><div class="hs-left" onclick="setRating(4.5)"></div><div class="hs-right" onclick="setRating(5)"></div><span class="hs-icon" id="hsi5" style="color:#2a2a35;">&#9733;</span></div>
+<div class="mov" id="rateMov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="rateMTitle">Rate this book</div>
+    <div class="msub">Left half of a star = half rating</div>
+    <div class="hsr">
+      <div class="hsz"><div class="hsl" onclick="SR(0.5)"></div><div class="hsr2" onclick="SR(1)"></div><span class="hsi" id="hs1" style="color:#2a2a35;">&#9733;</span></div>
+      <div class="hsz"><div class="hsl" onclick="SR(1.5)"></div><div class="hsr2" onclick="SR(2)"></div><span class="hsi" id="hs2" style="color:#2a2a35;">&#9733;</span></div>
+      <div class="hsz"><div class="hsl" onclick="SR(2.5)"></div><div class="hsr2" onclick="SR(3)"></div><span class="hsi" id="hs3" style="color:#2a2a35;">&#9733;</span></div>
+      <div class="hsz"><div class="hsl" onclick="SR(3.5)"></div><div class="hsr2" onclick="SR(4)"></div><span class="hsi" id="hs4" style="color:#2a2a35;">&#9733;</span></div>
+      <div class="hsz"><div class="hsl" onclick="SR(4.5)"></div><div class="hsr2" onclick="SR(5)"></div><span class="hsi" id="hs5" style="color:#2a2a35;">&#9733;</span></div>
     </div>
-    <div class="rating-lbl" id="ratingLbl">Tap to rate</div>
-    <textarea class="review-ta" id="reviewText" placeholder="Write your review... (optional)"></textarea>
-    <div class="priv-toggle">
-      <button class="priv-opt on" id="privPublic" onclick="setPriv('public')">&#127760; Public</button>
-      <button class="priv-opt" id="privPrivate" onclick="setPriv('private')">&#128274; Private diary</button>
+    <div class="rlbl" id="rlbl">Tap to rate</div>
+    <textarea class="rta" id="revTxt" placeholder="Write your review... (optional)"></textarea>
+    <div class="ptog">
+      <button class="po on" id="ppub" onclick="setPriv('public')">&#127760; Public review</button>
+      <button class="po" id="ppriv" onclick="setPriv('private')">&#128274; Private diary</button>
     </div>
-    <div class="priv-note" id="privNote">Visible to everyone on Bookmarker</div>
-    <button class="save-btn" id="rateSaveBtn" onclick="saveRating()">Save rating</button>
+    <div class="pnote" id="pnote">Visible to everyone on Bookmarker</div>
+    <button class="savebtn" id="saveBtn" onclick="doSave()">Save rating</button>
+  </div>
+</div>
+
+<!-- ADD FRIEND MODAL -->
+<div class="mov" id="addFriendMov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <button onclick="closeM('addFriendMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle">Add a friend</div>
+    <div class="msub">Search by email or username</div>
+    <div class="sib" style="margin-bottom:12px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="friendSearch" placeholder="Search users..." oninput="searchUsers(this.value)" autocomplete="off"/></div>
+    <div id="userSearchRes"></div>
   </div>
 </div>
 
 <!-- ACH MODAL -->
-<div class="modal-overlay" id="achModal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <button onclick="closeModal('achModal')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
-    <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 18px;border-bottom:0.5px solid var(--border);margin-bottom:16px;">
-      <div style="font-size:56px;margin-bottom:10px;" id="achIcon">&#128218;</div>
-      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:6px;text-align:center;" id="achTitle">First rating</div>
-      <div style="font-size:13px;color:var(--text3);text-align:center;line-height:1.6;margin-bottom:10px;" id="achDesc">You rated your first book.</div>
-      <span class="ach-rarity r-common" id="achBadge">Common</span>
+<div class="mov" id="achMov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <button onclick="closeM('achMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 20px;border-bottom:0.5px solid var(--border);margin-bottom:16px;">
+      <div style="font-size:60px;margin-bottom:10px;animation:popIn 0.4s ease both;" id="achIco">&#128218;</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:21px;color:var(--text);margin-bottom:6px;text-align:center;" id="achT">Achievement</div>
+      <div style="font-size:13px;color:var(--text3);text-align:center;line-height:1.6;margin-bottom:10px;" id="achD">Description</div>
+      <span class="rarity ru" id="achB">Uncommon</span>
     </div>
-    <div style="font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Keep reading to unlock</div>
-    <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;"><div style="font-size:22px;">&#11088;</div><div><div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:2px;">Rated 10 books</div><div style="font-size:11px;color:var(--text3);">Rate 10 books to unlock</div></div><span class="ach-rarity r-uncommon" style="margin-left:auto;">Uncommon</span></div>
-    <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:22px;">&#127942;</div><div><div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:2px;">Rated 50 books</div><div style="font-size:11px;color:var(--text3);">Rate 50 books to unlock</div></div><span class="ach-rarity r-rare" style="margin-left:auto;">Rare</span></div>
+    <div style="font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Up next</div>
+    <div style="display:flex;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;"><div style="font-size:22px;">&#11088;</div><div><div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:2px;">Rated 10 books</div><div style="font-size:11px;color:var(--text3);">Rate 10 books to unlock</div></div><span class="rarity ru" style="margin-left:auto;">Uncommon</span></div>
+    <div style="display:flex;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:22px;">&#127942;</div><div><div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:2px;">Rated 50 books</div><div style="font-size:11px;color:var(--text3);">Rate 50 books to unlock</div></div><span class="rarity rr" style="margin-left:auto;">Rare</span></div>
   </div>
 </div>
 
@@ -302,380 +443,506 @@ button,input,textarea,select{font-family:'DM Sans',sans-serif;cursor:pointer;}
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,onAuthStateChanged,signOut,updateProfile}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import{getFirestore,doc,setDoc,getDoc,collection,addDoc,query,where,orderBy,getDocs,updateDoc,deleteDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,doc,setDoc,getDoc,collection,addDoc,query,where,orderBy,limit,getDocs,updateDoc,deleteDoc,serverTimestamp,getCountFromServer}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const fbApp=initializeApp({apiKey:"AIzaSyDhTojDNLbBoVpybmyLSvnfqIS8036kOKE",authDomain:"bookmarker-a1ad7.firebaseapp.com",projectId:"bookmarker-a1ad7",storageBucket:"bookmarker-a1ad7.firebasestorage.app",messagingSenderId:"1093223038973",appId:"1:1093223038973:web:54d88b98ed7804856aa394"});
 const auth=getAuth(fbApp);
 const db=getFirestore(fbApp);
-const gProv=new GoogleAuthProvider();
-window._auth=auth; window._signOut=signOut;
-
-let TC='#5DCAA5',TCD='#0a2a20';
-let currentBook=null,prevScreen='home',currentRating=0,currentPrivacy='public';
-let currentUser=null,searchTimer=null,lastItems=[],wishlist=[];
+const GP=new GoogleAuthProvider();
+window._auth=auth; window._db=db; window._so=signOut;
 
 const GKEY='AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg';
-const FEATURED=[
-  {title:'The Midnight Library',authors:['Matt Haig'],isbn:'9780525559474',rating:4.1,ratingCount:'382,000',description:'Nora Seed finds herself in a magical library between life and death, where every book holds a different version of her life.',categories:['Fiction','Philosophy'],publishedDate:'2020',hero:true},
-  {title:'Holly',authors:['Stephen King'],isbn:'9781668016138',rating:3.9,ratingCount:'210,000',description:'Holly Gibney investigates a series of sinister disappearances in a quiet college town.',categories:['Horror','Thriller'],publishedDate:'2023'},
-  {title:'Tomorrow, and Tomorrow, and Tomorrow',authors:['Gabrielle Zevin'],isbn:'9780593321201',rating:4.3,ratingCount:'290,000',description:'Two friends form a creative partnership making video games spanning three decades.',categories:['Literary Fiction'],publishedDate:'2022'},
-  {title:'Fourth Wing',authors:['Rebecca Yarros'],isbn:'9781649374042',rating:4.1,ratingCount:'450,000',description:'At Basgiath War College Violet must choose between survival and her heart.',categories:['Fantasy','Romance'],publishedDate:'2023'},
-  {title:'Orbital',authors:['Samantha Harvey'],isbn:'9780802163714',rating:4.0,ratingCount:'85,000',description:'Six astronauts orbit the Earth over 24 hours, witnessing its fragile beauty.',categories:['Literary Fiction'],publishedDate:'2023'},
-  {title:'Intermezzo',authors:['Sally Rooney'],isbn:'9780374610364',rating:3.8,ratingCount:'120,000',description:'Two brothers navigate grief and love after losing their father.',categories:['Literary Fiction'],publishedDate:'2024'},
-  {title:'Demon Copperhead',authors:['Barbara Kingsolver'],isbn:'9780063251922',rating:4.4,ratingCount:'195,000',description:'A modern Appalachian retelling of David Copperfield set during the opioid crisis.',categories:['Literary Fiction'],publishedDate:'2022'},
-  {title:'Normal People',authors:['Sally Rooney'],isbn:'9780571334650',rating:3.7,ratingCount:'310,000',description:'Connell and Marianne grow up in the same town but inhabit very different social worlds.',categories:['Literary Fiction'],publishedDate:'2018'},
-  {title:'James',authors:['Percival Everett'],isbn:'9780385550369',rating:4.0,ratingCount:'95,000',description:'A reimagining of Huckleberry Finn told from the perspective of Jim.',categories:['Literary Fiction','Historical'],publishedDate:'2024'},
-];
-const GENRE_ISBNS=['9781782392071','9780593135204','9780684801452','9781250800817','9780307743657','9780679748076'];
+let TC='#5DCAA5',TCD='#0a2a20';
+let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
+let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null;
 
-const olc=(isbn,s)=>`https://covers.openlibrary.org/b/isbn/${isbn}-${s||'M'}.jpg?default=false`;
+// HELPERS
+const olc=(i,s)=>`https://covers.openlibrary.org/b/isbn/${i}-${s||'M'}.jpg?default=false`;
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const sj=o=>JSON.stringify(o).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-const grd=seed=>{const g=['linear-gradient(145deg,#1a2a5a,#3a1a5a)','linear-gradient(145deg,#5a1a1a,#8a2020)','linear-gradient(145deg,#1a5a2a,#2a8a3a)','linear-gradient(145deg,#5a4a1a,#8a6a1a)','linear-gradient(145deg,#1a4a5a,#1a6a8a)','linear-gradient(145deg,#5a1a3a,#8a1a5a)','linear-gradient(145deg,#3a1a5a,#5a1a8a)'];let n=0;for(let i=0;i<(seed||'').length;i++)n+=seed.charCodeAt(i);return g[n%g.length];};
+const grad=s=>{const g=['linear-gradient(145deg,#1a2a5a,#3a1a5a)','linear-gradient(145deg,#5a1a1a,#8a2020)','linear-gradient(145deg,#1a5a2a,#2a8a3a)','linear-gradient(145deg,#5a4a1a,#8a6a1a)','linear-gradient(145deg,#1a4a5a,#1a6a8a)','linear-gradient(145deg,#5a1a3a,#8a1a5a)','linear-gradient(145deg,#3a1a5a,#5a1a8a)'];let n=0;for(let i=0;i<(s||'').length;i++)n+=s.charCodeAt(i);return g[n%g.length];};
 const bid=b=>b.isbn||((b.title+(b.authors||[''])[0]).replace(/[^a-z0-9]/gi,'').toLowerCase());
+const ini=s=>(s||'?').charAt(0).toUpperCase();
+const avColor=['#1a1a4a:#85B7EB','#3a1a1a:#F0997B','#1a3a1a:#97C459','#1a2a3a:#85B7EB','#2a1a3a:#ED93B1','#1a3a3a:#5DCAA5'];
+const avc=idx=>{const p=avColor[idx%avColor.length].split(':');return{bg:p[0],fg:p[1]};};
 
-window.showScreen=n=>{
+window.SS=n=>{
   if(n!=='book')prevScreen=n;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+n).classList.add('active');
-  ['home','search','friends','profile'].forEach(t=>{const b=document.getElementById('nav-'+t);if(b)b.classList.toggle('active',t===n);});
+  const scr=document.getElementById('S-'+n);
+  if(scr){scr.classList.add('active');scr.style.animation='none';scr.offsetHeight;scr.style.animation='';}
+  ['home','search','friends','profile'].forEach(t=>{const b=document.getElementById('nb-'+t);if(b)b.classList.toggle('on',t===n);});
   if(n==='profile')renderProfile();
   if(n==='friends')renderFriends();
 };
-window.goBack=()=>showScreen(prevScreen);
-window.showToast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);};
-window.closeModal=id=>document.getElementById(id).classList.remove('open');
-document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+window.goBack=()=>SS(prevScreen);
+window.showToast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);};
+window.closeM=id=>{const el=document.getElementById(id);if(el)el.classList.remove('open');};
+document.querySelectorAll('.mov').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
-// AUTH
-onAuthStateChanged(auth,user=>{
-  currentUser=user;
+// ── AUTH ──
+onAuthStateChanged(auth,async u=>{
+  CU=u;
   updatePill();
-  if(user){loadWL();if(document.getElementById('screen-profile').classList.contains('active'))renderProfile();}
+  if(u){
+    await setDoc(doc(db,'users',u.uid),{uid:u.uid,name:u.displayName||u.email.split('@')[0],email:u.email,nameLower:(u.displayName||u.email.split('@')[0]).toLowerCase(),updatedAt:serverTimestamp()},{merge:true});
+    loadWL();
+    checkFriendReqs();
+    if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
+  }
 });
+
 function updatePill(){
   const p=document.getElementById('authPill');
-  if(currentUser){
-    const ini=(currentUser.displayName||currentUser.email||'U').charAt(0).toUpperCase();
-    p.innerHTML=`<div class="user-pill" onclick="showScreen('profile')"><div class="user-pill-av">${ini}</div><div class="user-pill-name">${esc(currentUser.displayName||'Account')}</div></div>`;
+  if(!p)return;
+  if(CU){
+    p.innerHTML=`<div class="upill" onclick="SS('profile')"><div class="upillav">${ini(CU.displayName||CU.email)}</div><div class="upillname">${esc(CU.displayName||'Account')}</div></div>`;
   }else{
-    p.innerHTML=`<button onclick="openAuthModal()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:7px 16px;font-size:13px;font-weight:700;">Sign in</button>`;
+    p.innerHTML=`<button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:7px 16px;font-size:13px;font-weight:700;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.94)'" onmouseup="this.style.transform=''">Sign in</button>`;
   }
 }
-let authMode='signin';
-window.openAuthModal=()=>{
-  authMode='signin';
-  document.getElementById('authTitle').textContent='Sign in';
-  document.getElementById('authSub').textContent='Welcome back to Bookmarker';
-  document.getElementById('authSubmitBtn').textContent='Sign in';
-  document.getElementById('authAlt').innerHTML='No account? <span onclick="toggleAuthMode()">Sign up free</span>';
-  document.getElementById('authName').style.display='none';
-  document.getElementById('authError').textContent='';
-  document.getElementById('authModal').classList.add('open');
-};
-window.toggleAuthMode=()=>{
-  authMode=authMode==='signin'?'signup':'signin';
-  const s=authMode==='signup';
+
+let authMode='in';
+window.openAuth=()=>{authMode='in';_setAuthUI();document.getElementById('authMov').classList.add('open');};
+function _setAuthUI(){
+  const s=authMode==='up';
   document.getElementById('authTitle').textContent=s?'Create account':'Sign in';
   document.getElementById('authSub').textContent=s?'Join Bookmarker free':'Welcome back';
-  document.getElementById('authSubmitBtn').textContent=s?'Create account':'Sign in';
-  document.getElementById('authAlt').innerHTML=s?'Already have an account? <span onclick="toggleAuthMode()">Sign in</span>':'No account? <span onclick="toggleAuthMode()">Sign up free</span>';
-  document.getElementById('authName').style.display=s?'block':'none';
-  document.getElementById('authError').textContent='';
-};
-window.doGoogleSignIn=async()=>{
-  const errEl=document.getElementById('authError');
-  errEl.textContent='Opening Google sign in...';
+  document.getElementById('aBtn').textContent=s?'Create account':'Sign in';
+  document.getElementById('aAlt').innerHTML=s?'Already have an account? <span onclick="toggleAuth()">Sign in</span>':'No account? <span onclick="toggleAuth()">Sign up free</span>';
+  document.getElementById('aName').style.display=s?'block':'none';
+  document.getElementById('aErr').textContent='';
+}
+window.toggleAuth=()=>{authMode=authMode==='in'?'up':'in';_setAuthUI();};
+
+window.doGoogle=async()=>{
+  const e=document.getElementById('aErr');
+  e.textContent='Opening Google...';
   try{
-    const r=await signInWithPopup(auth,gProv);
-    await setDoc(doc(db,'users',r.user.uid),{name:r.user.displayName,email:r.user.email,updatedAt:serverTimestamp()},{merge:true});
-    closeModal('authModal');
-    showToast('Welcome, '+r.user.displayName+'!');
-  }catch(e){
-    if(e.code==='auth/popup-blocked')errEl.textContent='Popup blocked. Please allow popups for this site in your browser settings, then try again.';
-    else if(e.code==='auth/unauthorized-domain')errEl.textContent='Domain not authorised. See setup instructions below.';
-    else errEl.textContent=e.message;
+    const r=await signInWithPopup(auth,GP);
+    closeM('authMov');
+    showToast('Welcome, '+r.user.displayName+'! &#127381;');
+    if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
+  }catch(err){
+    e.textContent=err.code==='auth/popup-blocked'?'Popup blocked — allow popups in your browser for this site':err.code==='auth/unauthorized-domain'?'Add your Vercel URL to Firebase Auth > Settings > Authorised domains':err.message;
   }
 };
-window.doEmailAuth=async()=>{
-  const email=document.getElementById('authEmail').value.trim();
-  const pw=document.getElementById('authPassword').value;
-  const name=document.getElementById('authName').value.trim();
-  const errEl=document.getElementById('authError');
-  errEl.textContent='';
-  if(!email||!pw){errEl.textContent='Please fill in all fields';return;}
+
+window.doEmail=async()=>{
+  const email=document.getElementById('aEmail').value.trim();
+  const pw=document.getElementById('aPass').value;
+  const name=document.getElementById('aName').value.trim();
+  const e=document.getElementById('aErr');
+  e.textContent='';
+  if(!email||!pw){e.textContent='Please fill in all fields';return;}
+  const btn=document.getElementById('aBtn');btn.textContent='...';btn.disabled=true;
   try{
-    if(authMode==='signup'){
+    if(authMode==='up'){
       const c=await createUserWithEmailAndPassword(auth,email,pw);
       await updateProfile(c.user,{displayName:name||email.split('@')[0]});
-      await setDoc(doc(db,'users',c.user.uid),{name:name||email.split('@')[0],email,createdAt:serverTimestamp()});
     }else{
       await signInWithEmailAndPassword(auth,email,pw);
     }
-    closeModal('authModal');
-    showToast(authMode==='signup'?'Welcome to Bookmarker!':'Welcome back!');
-  }catch(e){errEl.textContent=e.code==='auth/wrong-password'||e.code==='auth/user-not-found'?'Invalid email or password':e.message.replace('Firebase: ','');}
+    closeM('authMov');
+    showToast(authMode==='up'?'Welcome to Bookmarker! &#127381;':'Welcome back! &#128075;');
+    if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
+  }catch(err){e.textContent=err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Incorrect email or password':err.message.replace('Firebase: ','');}
+  btn.textContent=authMode==='up'?'Create account':'Sign in';btn.disabled=false;
 };
 
-// WISHLIST
+// ── WISHLIST ──
 async function loadWL(){
-  if(!currentUser)return;
-  try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',currentUser.uid)));wishlist=s.docs.map(d=>d.data());}catch(e){}
+  if(!CU)return;
+  try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',CU.uid)));wl=s.docs.map(d=>d.data());}catch(e){}
   updWLBtn();
 }
-const inWL=b=>wishlist.some(w=>w.bookId===bid(b));
+const inWL=b=>wl.some(w=>w.bookId===bid(b));
 function updWLBtn(){
-  const btn=document.getElementById('wlTopBtn');
-  if(!btn||!currentBook)return;
-  btn.style.opacity=inWL(currentBook)?'1':'0.4';
-  btn.title=inWL(currentBook)?'Remove from wishlist':'Add to wishlist';
+  const btn=document.getElementById('wlTopBtn');if(!btn||!currentBook)return;
+  const on=inWL(currentBook);
+  btn.style.opacity=on?'1':'0.4';
+  btn.style.transform=on?'scale(1.1)':'scale(1)';
 }
-window.toggleWishlist=async()=>{
-  if(!currentUser){openAuthModal();return;}
+window.toggleWL=async()=>{
+  if(!CU){openAuth();return;}
   if(!currentBook)return;
   const id=bid(currentBook);
-  if(inWL(currentBook)){
-    try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',currentUser.uid),where('bookId','==',id)));for(const d of s.docs)await deleteDoc(d.ref);wishlist=wishlist.filter(w=>w.bookId!==id);showToast('Removed from wishlist');}catch(e){}
+  const on=inWL(currentBook);
+  if(on){
+    try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',CU.uid),where('bookId','==',id)));for(const d of s.docs)await deleteDoc(d.ref);wl=wl.filter(w=>w.bookId!==id);showToast('Removed from wishlist');}catch(e){}
   }else{
-    try{const e2={userId:currentUser.uid,bookId:id,title:currentBook.title,authors:currentBook.authors,cover:currentBook.cover||'',isbn:currentBook.isbn||'',addedAt:serverTimestamp()};await addDoc(collection(db,'wishlist'),e2);wishlist.push(e2);showToast('Added to wishlist!');}catch(e){}
+    try{const en={userId:CU.uid,bookId:id,title:currentBook.title,authors:currentBook.authors||[],cover:currentBook.cover||'',isbn:currentBook.isbn||'',addedAt:serverTimestamp()};await addDoc(collection(db,'wishlist'),en);wl.push(en);showToast('&#128278; Added to wishlist!');}catch(e){}
   }
   updWLBtn();
-  if(document.getElementById('screen-profile').classList.contains('active'))renderProfile();
+  if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
 };
 window.removeWL=async id=>{
-  if(!currentUser)return;
-  try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',currentUser.uid),where('bookId','==',id)));for(const d of s.docs)await deleteDoc(d.ref);wishlist=wishlist.filter(w=>w.bookId!==id);showToast('Removed');renderProfile();}catch(e){}
+  if(!CU)return;
+  try{const s=await getDocs(query(collection(db,'wishlist'),where('userId','==',CU.uid),where('bookId','==',id)));for(const d of s.docs)await deleteDoc(d.ref);wl=wl.filter(w=>w.bookId!==id);showToast('Removed');renderProfile();}catch(e){}
 };
 window.qWL=async book=>{
-  if(!currentUser){openAuthModal();return;}
-  currentBook=book;
-  await window.toggleWishlist();
-  renderResults(lastItems);
+  if(!CU){openAuth();return;}
+  const prev=currentBook;currentBook=book;
+  await toggleWL();
+  currentBook=prev;
+  renderSearch(lastItems);
 };
 
-// RATINGS
-window.openRateModal=()=>{
-  if(!currentUser){openAuthModal();return;}
-  currentRating=0;
-  for(let i=1;i<=5;i++){const el=document.getElementById('hsi'+i);if(el)el.style.cssText='font-size:40px;color:#2a2a35;pointer-events:none;';}
-  document.getElementById('ratingLbl').textContent='Tap to rate';
-  document.getElementById('reviewText').value='';
-  document.getElementById('rateModalTitle').textContent='Rate: '+(currentBook?currentBook.title.substring(0,26):'this book');
-  document.getElementById('rateModal').classList.add('open');
+// ── RATINGS ──
+window.openRate=()=>{
+  if(!CU){openAuth();showToast('Sign in to rate books');return;}
+  curRating=0;
+  for(let i=1;i<=5;i++){const el=document.getElementById('hs'+i);if(el){el.style.color='#2a2a35';el.style.cssText='font-size:44px;pointer-events:none;color:#2a2a35;';}}
+  document.getElementById('rlbl').textContent='Tap to rate';
+  document.getElementById('revTxt').value='';
+  document.getElementById('rateMTitle').textContent='Rate: '+(currentBook?currentBook.title.substring(0,24):'this book');
+  document.getElementById('rateMov').classList.add('open');
 };
-window.setRating=v=>{
-  currentRating=v;
-  const lbs=['','half star','1 star','1.5 stars','2 stars','2.5 stars','3 stars','3.5 stars','4 stars','4.5 stars','5 stars'];
-  document.getElementById('ratingLbl').textContent=lbs[Math.round(v*2)]||'';
-  document.getElementById('ratingLbl').style.color=TC;
+window.SR=v=>{
+  curRating=v;
+  const lbs=['','half','1 star','1.5','2 stars','2.5','3 stars','3.5','4 stars','4.5','5 stars'];
+  document.getElementById('rlbl').textContent=lbs[Math.round(v*2)]||'';
+  document.getElementById('rlbl').style.color=TC;
   for(let i=1;i<=5;i++){
-    const el=document.getElementById('hsi'+i);if(!el)continue;
-    if(i<=Math.floor(v))el.style.cssText=`font-size:40px;color:${TC};pointer-events:none;`;
-    else if(i===Math.ceil(v)&&v%1!==0)el.style.cssText=`font-size:40px;background:linear-gradient(90deg,${TC} 50%,#2a2a35 50%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;pointer-events:none;`;
-    else el.style.cssText='font-size:40px;color:#2a2a35;pointer-events:none;';
+    const el=document.getElementById('hs'+i);if(!el)continue;
+    if(i<=Math.floor(v))el.style.cssText=`font-size:44px;pointer-events:none;color:${TC};`;
+    else if(i===Math.ceil(v)&&v%1!==0)el.style.cssText=`font-size:44px;pointer-events:none;background:linear-gradient(90deg,${TC} 50%,#2a2a35 50%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
+    else el.style.cssText='font-size:44px;pointer-events:none;color:#2a2a35;';
   }
 };
 window.setPriv=m=>{
-  currentPrivacy=m;
-  document.getElementById('privPublic').classList.toggle('on',m==='public');
-  document.getElementById('privPrivate').classList.toggle('on',m==='private');
-  document.getElementById('privNote').textContent=m==='public'?'Visible to everyone on Bookmarker':'Only visible to you';
+  curPriv=m;
+  document.getElementById('ppub').classList.toggle('on',m==='public');
+  document.getElementById('ppriv').classList.toggle('on',m==='private');
+  document.getElementById('pnote').textContent=m==='public'?'Visible to everyone on Bookmarker':'Only visible to you — private diary';
 };
-window.saveRating=async()=>{
-  if(!currentRating){showToast('Please tap a star first');return;}
-  const btn=document.getElementById('rateSaveBtn');
-  btn.textContent='Saving...';btn.disabled=true;
+window.doSave=async()=>{
+  if(!curRating){showToast('Please tap a star first');return;}
+  const btn=document.getElementById('saveBtn');btn.textContent='Saving...';btn.disabled=true;
   try{
     const id=bid(currentBook);
-    await setDoc(doc(db,'ratings',currentUser.uid+'_'+id),{userId:currentUser.uid,userName:currentUser.displayName||'Anonymous',bookId:id,bookTitle:currentBook.title,bookCover:currentBook.cover||'',bookIsbn:currentBook.isbn||'',rating:currentRating,review:document.getElementById('reviewText').value.trim(),privacy:currentPrivacy,timestamp:serverTimestamp()});
-    const bref=doc(db,'books',id);
-    const bsnap=await getDoc(bref);
-    if(bsnap.exists()){const bd2=bsnap.data();const nc=bd2.ratingCount+1,nt=bd2.ratingTotal+currentRating;await updateDoc(bref,{ratingCount:nc,ratingTotal:nt,avgRating:Math.round(nt/nc*10)/10});}
-    else{await setDoc(bref,{title:currentBook.title,authors:currentBook.authors,cover:currentBook.cover||'',isbn:currentBook.isbn||id,ratingCount:1,ratingTotal:currentRating,avgRating:currentRating});}
-    closeModal('rateModal');
-    showToast('Saved! '+currentRating+' stars');
+    const rev=document.getElementById('revTxt').value.trim();
+    await setDoc(doc(db,'ratings',CU.uid+'_'+id),{userId:CU.uid,userName:CU.displayName||'Anonymous',userNameLower:(CU.displayName||'anon').toLowerCase(),bookId:id,bookTitle:currentBook.title,bookCover:currentBook.cover||'',bookIsbn:currentBook.isbn||'',rating:curRating,review:rev,privacy:curPriv,timestamp:serverTimestamp()});
+    // update aggregate
+    const br=doc(db,'books',id);
+    const bs=await getDoc(br);
+    if(bs.exists()){const d=bs.data();const nc=d.ratingCount+1,nt=d.ratingTotal+curRating;await updateDoc(br,{ratingCount:nc,ratingTotal:nt,avgRating:Math.round(nt/nc*10)/10});}
+    else{await setDoc(br,{title:currentBook.title,authors:currentBook.authors||[],cover:currentBook.cover||'',isbn:currentBook.isbn||id,ratingCount:1,ratingTotal:curRating,avgRating:curRating});}
+    closeM('rateMov');
+    showToast('&#9733; Saved! '+curRating+' stars');
     openBook(currentBook);
-  }catch(e){showToast('Error saving - try again');}
+    if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
+  }catch(e){console.error(e);showToast('Error saving — try again');}
   btn.textContent='Save rating';btn.disabled=false;
 };
 
-// BOOK PAGE
+// ── BOOK PAGE ──
 window.openBook=async book=>{
-  currentBook=book;showScreen('book');updWLBtn();
+  currentBook=book;SS('book');updWLBtn();
   const id=bid(book);
-  const cov=book.cover?`<img class="book-cover-lg" src="${book.cover}" onerror="this.style.background='${grd(book.title)}';this.removeAttribute('src')" alt="${esc(book.title)}">`:`<div class="book-cover-lg" style="background:${grd(book.title)};"></div>`;
-  renderBP(book,null,null,cov,'<div class="loading-msg" style="padding:16px 0;font-size:13px;">Loading reviews...</div>');
+  const cov=book.cover?`<img class="bkcov" src="${book.cover}" onerror="this.style.background='${grad(book.title)}';this.removeAttribute('src')" alt="${esc(book.title)}">`:`<div class="bkcov" style="background:${grad(book.title)};"></div>`;
+  // Show immediately, load real data in background
+  _renderBP(book,null,0,cov,'<div class="lmsg" style="padding:20px 0;"><div class="spin"></div>Loading...</div>');
   try{
-    const[bs,rs]=await Promise.all([getDoc(doc(db,'books',id)),getDocs(query(collection(db,'ratings'),where('bookId','==',id),where('privacy','==','public'),orderBy('timestamp','desc')))]);
-    let avg=null,cnt=null;
-    if(bs.exists()){const bd2=bs.data();avg=bd2.avgRating;cnt=bd2.ratingCount;}
-    renderBP(book,avg,cnt,cov,buildRevs(rs));
-  }catch(e){renderBP(book,null,null,cov,'<div class="loading-msg" style="padding:16px 0;font-size:13px;">Sign in to see reviews</div>');}
+    const[bs,rs]=await Promise.all([
+      getDoc(doc(db,'books',id)),
+      getDocs(query(collection(db,'ratings'),where('bookId','==',id),where('privacy','==','public'),orderBy('timestamp','desc'),limit(50)))
+    ]);
+    let avg=null,cnt=0;
+    if(bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}
+    _renderBP(book,avg,cnt,cov,_buildRevs(rs));
+  }catch(e){_renderBP(book,null,0,cov,'<div style="padding:16px 0;font-size:13px;color:var(--text3);">Sign in to see reviews</div>');}
 };
-function buildRevs(snap){
-  if(!snap||snap.empty)return'<div style="padding:16px 0;font-size:13px;color:var(--text3);">Be the first to review this book!</div>';
-  return snap.docs.map(d=>{const r=d.data();let stars='';for(let i=1;i<=5;i++)stars+=i<=Math.round(r.rating)?'&#9733;':'&#9734;';const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';return`<div class="rev-item"><div class="rev-header"><span class="rev-name">${esc(r.userName)}</span><span class="rev-pill">${r.rating} &#9733;</span></div><div class="rev-stars-sm">${stars}</div>${r.review?`<div class="rev-body">${esc(r.review)}</div>`:''}<div class="rev-date">${dt}</div></div>`;}).join('');
+
+function _buildRevs(snap){
+  if(!snap||snap.empty)return`<div style="padding:16px 0;font-size:14px;color:var(--tc);font-weight:500;">&#127381; Be the first to review this book!</div>`;
+  return snap.docs.map((d,i)=>{const r=d.data();let st='';for(let j=1;j<=5;j++)st+=j<=Math.round(r.rating)?'&#9733;':'&#9734;';const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';return`<div class="revi" style="animation-delay:${i*0.04}s;"><div class="revhdr"><span class="revname">${esc(r.userName)}</span><span class="revpill">${r.rating}&#9733;</span></div><div class="revstars">${st}</div>${r.review?`<div class="revbody">${esc(r.review)}</div>`:''}<div class="revdate">${dt}</div></div>`;}).join('');
 }
-function renderBP(book,avg,cnt,cov,revHtml){
-  const r=parseFloat(avg)||0;
-  const hasRating=avg!==null&&cnt>0;
-  let frac='';if(hasRating){for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,r-(i-1)));frac+=`<span class="frac-star"><span class="bg">&#9733;</span><span class="fg" style="width:${Math.round(f*100)}%;">&#9733;</span></span>`;}}
-  const theme=(book.categories||[]).slice(0,5).map(c=>`<div class="theme-pill">${esc(c)}</div>`).join('')||'<div class="theme-pill">Fiction</div>';
-  const buyLink=book.previewLink||'https://books.google.com/books?q='+encodeURIComponent(book.title);
-  const wlIn=inWL(book);
+
+function _renderBP(book,avg,cnt,cov,revHtml){
+  const r=avg||0;
+  const hasR=avg!==null&&cnt>0;
+  let frac='';
+  if(hasR){for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,r-(i-1)));frac+=`<span class="fs"><span class="bg">&#9733;</span><span class="fg" style="width:${Math.round(f*100)}%;">&#9733;</span></span>`;}}
+  const theme=(book.categories||[]).slice(0,6).map(c=>`<div class="tpill">${esc(c)}</div>`).join('')||'<div class="tpill">Fiction</div>';
+  const buy=book.previewLink||'https://books.google.com/books?q='+encodeURIComponent(book.title);
+  const won=inWL(book);
   document.getElementById('bookContent').innerHTML=
-    `<div class="book-hero">${cov}<div class="book-meta"><div class="book-title-lg">${esc(book.title)}</div><div class="book-author-lg">${esc((book.authors||[]).join(', '))}${book.publishedDate?' · '+book.publishedDate:''}</div>${hasRating?`<div class="frac-stars">${frac}</div><div class="avg-num">${r}</div><div class="rating-cnt">${cnt} rating${cnt!==1?'s':''} on Bookmarker</div>`:`<div style="font-size:13px;color:var(--tc);margin-bottom:12px;font-weight:500;">Be the first to rate this book!</div>`}<a href="${buyLink}" target="_blank" class="buy-btn">&#128722; Buy on Google Books</a><button class="wl-big-btn${wlIn?' in':''}" onclick="toggleWishlist()">${wlIn?'&#128278; In your wishlist':'&#128278; Add to wishlist'}</button></div></div>`+
-    `<div class="bsec"><div class="bsec-title">Summary <span class="ai-pill">AI</span></div><div class="summary-text">${esc((book.description||'No description available.').substring(0,320))}</div></div>`+
-    `<div class="bsec"><div class="bsec-title">Themes</div><div class="theme-pills">${theme}</div></div>`+
-    `<div class="bsec"><div class="bsec-title">Tone</div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#444;font-size:11px;">Dark</span></div><div class="tone-track"><div class="tone-fill" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow</span><span class="tone-lbl" style="color:#444;font-size:11px;">Fast</span></div><div class="tone-track"><div class="tone-fill" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#444;font-size:11px;">Heavy</span></div><div class="tone-track"><div class="tone-fill" style="width:65%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div></div>`+
-    `<div class="bsec"><div class="bsec-title">Reviews${cnt?' ('+cnt+')':''}</div><div id="revList">${revHtml}</div></div>`+
+    `<div class="bkhero anim-fade-up">${cov}<div class="bkmeta"><div class="bktitle">${esc(book.title)}</div><div class="bkauth">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div>${hasR?`<div class="fstars">${frac}</div><div class="avgnum">${r}</div><div class="rcnt">${cnt.toLocaleString()} rating${cnt!==1?'s':''} on Bookmarker</div>`:`<div style="font-size:13px;color:var(--tc);margin-bottom:12px;font-weight:500;">Be the first to rate!</div>`}<a href="${buy}" target="_blank" class="buybtn">&#128722; Buy on Google Books</a><button class="wlbig${won?' on':''}" onclick="toggleWL()">${won?'&#128278; In your wishlist':'&#128278; Add to wishlist'}</button></div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.05s;"><div class="bsec-t">Summary<span class="aipill">AI</span></div><div class="sumtext">${esc((book.description||'No description available.').substring(0,340))}</div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.1s;"><div class="bsec-t">Themes</div><div class="tpills">${theme}</div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.12s;"><div class="bsec-t">Tone</div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#555;font-size:11px;">Dark</span></div><div class="tone-tr"><div class="tone-f" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow</span><span class="tone-lbl" style="color:#555;font-size:11px;">Fast</span></div><div class="tone-tr"><div class="tone-f" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#555;font-size:11px;">Heavy</span></div><div class="tone-tr"><div class="tone-f" style="width:62%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.15s;"><div class="bsec-t">Reviews${cnt?` (${cnt.toLocaleString()})`:''}</div><div id="revList">${revHtml}</div></div>`+
     `<div style="height:80px;"></div>`;
   document.getElementById('bookContent').scrollTop=0;
 }
 
-// SEARCH
-window.onSearchInput=val=>{
-  clearTimeout(searchTimer);
-  if(val.length<2){document.getElementById('searchResults').innerHTML='';document.getElementById('searchMsg').style.display='block';document.getElementById('searchMsg').textContent='Start typing to search millions of books';return;}
-  document.getElementById('searchMsg').style.display='block';document.getElementById('searchMsg').textContent='Searching...';
-  searchTimer=setTimeout(()=>doSearch(val),500);
+// ── SEARCH ──
+window.onSI=val=>{
+  clearTimeout(searchT);
+  const msg=document.getElementById('searchMsg');
+  if(val.length<2){document.getElementById('searchRes').innerHTML='';msg.style.display='block';msg.innerHTML='Start typing to search millions of books';return;}
+  msg.style.display='block';msg.innerHTML='<div class="spin"></div>Searching...';
+  searchT=setTimeout(()=>doSearch(val),450);
 };
-window.reSort=()=>{const q=document.getElementById('searchInput').value.trim();if(q.length>=2)doSearch(q);};
+window.reSort=()=>{const q=document.getElementById('searchIn').value.trim();if(q.length>=2)doSearch(q);};
 function doSearch(q){
   const ord=document.getElementById('sortSel')?.value||'relevance';
   fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(q)}&maxResults=21&orderBy=${ord}&langRestrict=en`)
-    .then(r=>r.json()).then(data=>{lastItems=data.items||[];document.getElementById('searchMsg').style.display='none';renderResults(lastItems);})
-    .catch(()=>{document.getElementById('searchMsg').textContent='Search error — check your connection.';});
+    .then(r=>r.json()).then(d=>{lastItems=d.items||[];document.getElementById('searchMsg').style.display='none';renderSearch(lastItems);})
+    .catch(()=>{document.getElementById('searchMsg').innerHTML='Search error &#8212; check your connection.';});
 }
-function renderResults(items){
-  const el=document.getElementById('searchResults');
+function renderSearch(items){
+  const el=document.getElementById('searchRes');
   if(!items.length){el.innerHTML='';document.getElementById('searchMsg').style.display='block';document.getElementById('searchMsg').textContent='No results found';return;}
-  el.innerHTML=items.map(item=>{
+  el.innerHTML=items.map((item,i)=>{
     const info=item.volumeInfo||{};
     const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
     let cover=isbn?olc(isbn.identifier,'M'):'';
     if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
-    const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,400),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
-    const bd2=sj(book);
-    const wlin=inWL(book);
-    const cH=cover?`<img class="result-cover" src="${cover}" onerror="this.style.background='${grd(book.title)}';this.removeAttribute('src')" loading="lazy" alt="${esc(book.title)}">`:`<div class="result-cover" style="background:${grd(book.title)};"></div>`;
-    return`<div class="result-item"><div onclick='openBook(${bd2})'>${cH}<div class="result-title">${esc(book.title)}</div><div class="result-author">${esc((info.authors||[''])[0])}</div></div><button class="wl-btn-sm" onclick='qWL(${bd2})' title="${wlin?'Remove from wishlist':'Add to wishlist'}">${wlin?'&#128278;':'&#10133;'}</button></div>`;
+    const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
+    const bd2=sj(book);const won=inWL(book);
+    const ch=cover?`<img class="rcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.removeAttribute('src')" loading="lazy" alt="${esc(book.title)}">`:`<div class="rcov" style="background:${grad(book.title)};"></div>`;
+    return`<div class="ri anim-fade-up" style="animation-delay:${i*0.03}s;"><div onclick='openBook(${bd2})'>${ch}<div class="rtitle">${esc(book.title)}</div><div class="rauthor">${esc((info.authors||[''])[0])}</div></div><button class="wlbtn${won?' on':''}" onclick='qWL(${bd2})' title="${won?'Remove':'Add to wishlist'}">${won?'&#128278;':'&#43;'}</button></div>`;
   }).join('');
 }
 
-// GENRE
+// ── GENRE ──
 window.loadGenre=(q,tabEl)=>{
-  document.querySelectorAll('.genre-tab').forEach(t=>t.classList.remove('active'));
-  if(tabEl)tabEl.classList.add('active');
-  document.getElementById('homeGridLabel').textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
-  const grid=document.getElementById('homeGrid');
-  grid.innerHTML='<div style="grid-column:1/-1;" class="loading-msg">Loading...</div>';
+  document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('on'));
+  if(tabEl)tabEl.classList.add('on');
+  const label=document.getElementById('gridLabel');
+  if(label)label.textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
+  const g=document.getElementById('homeGrid');
+  g.innerHTML=Array(6).fill(0).map(()=>`<div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>`).join('');
   fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=subject:${encodeURIComponent(q)}&maxResults=9&orderBy=relevance&langRestrict=en`)
-    .then(r=>r.json()).then(data=>{
-      const items=data.items||[];
-      if(!items.length){grid.innerHTML='<div style="grid-column:1/-1;" class="loading-msg">No results found</div>';return;}
-      grid.innerHTML=items.map(item=>{
+    .then(r=>r.json()).then(d=>{
+      const items=d.items||[];
+      if(!items.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
+      g.innerHTML=items.map((item,i)=>{
         const info=item.volumeInfo||{};
         const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
         let cover=isbn?olc(isbn.identifier,'M'):'';
         if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
-        const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,400),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
+        const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
         const bd2=sj(book);
-        const cH=cover?`<img class="grid3-cover" src="${cover}" onerror="this.style.background='${grd(book.title)}';this.removeAttribute('src')" loading="lazy">`:`<div class="grid3-cover" style="background:${grd(book.title)};"></div>`;
-        return`<div class="grid3-item" onclick='openBook(${bd2})'>${cH}<div class="grid3-title">${esc(book.title)}</div></div>`;
+        const ch=cover?`<img class="gcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}">`:`<div class="gcov" style="background:${grad(book.title)};"></div>`;
+        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick='openBook(${bd2})'>${ch}<div class="gtitle">${esc(book.title)}</div></div>`;
       }).join('');
-    }).catch(()=>{grid.innerHTML='<div style="grid-column:1/-1;" class="loading-msg">Could not load - check connection</div>';});
+    }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load &#8212; check connection</div>';});
 };
 
-// FRIENDS
-async function renderFriends(){
-  const el=document.getElementById('friendsContent');
-  const friends=[
-    {av:'EK',bg:'#1a1a4a',fg:'#85B7EB',name:'Emma K.',sub:'Dublin',bk:'The Midnight Library',q:'"Genuinely moved me. Read it in one sitting."',chips:['&#128218; Century reader','&#11088; Tough critic','&#128293; On a streak'],c1:'#5DCAA5',c2:'#85B7EB'},
-    {av:'JO',bg:'#3a1a1a',fg:'#F0997B',name:'James O.',sub:'Cork',bk:'Holly',q:'"King at his best. Dark and completely gripping."',chips:['&#128218; Century reader','&#128293; On a streak'],c1:'#F0997B',c2:'#e8c84a'},
-    {av:'CR',bg:'#1a3a1a',fg:'#97C459',name:'Claire R.',sub:'Galway',bk:'Demon Copperhead',q:'"Kingsolver is untouchable. Absolutely stunning."',chips:['&#128218; Century reader','&#127758; World traveller'],c1:'#97C459',c2:'#5DCAA5'},
-    {av:'SM',bg:'#1a2a3a',fg:'#85B7EB',name:'Sean M.',sub:'Dublin',bk:'Fourth Wing',q:'"Addictive. Could not put it down all weekend."',chips:['&#128293; On a streak'],c1:'#85B7EB',c2:'#7F77DD'},
-  ];
-  let html='';
-  if(currentUser){
-    try{
-      const snap=await getDocs(query(collection(db,'ratings'),where('userId','==',currentUser.uid),where('privacy','==','public'),orderBy('timestamp','desc')));
-      if(!snap.empty){
-        html+=`<div style="padding:14px 18px;border-bottom:0.5px solid var(--border);"><div class="sec-title" style="padding:0;margin-bottom:10px;">Your recent activity</div>`;
-        snap.docs.slice(0,3).forEach(d=>{const r=d.data();let stars='';for(let i=0;i<Math.round(r.rating);i++)stars+='&#9733;';html+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${stars} ${r.rating}&#9733;</div>${r.review?`<div style="font-size:11px;color:var(--text3);">${esc(r.review.substring(0,60))}${r.review.length>60?'...':''}</div>`:''}</div></div>`;});
-        html+='</div>';
-      }
-    }catch(e){}
-  }
-  html+=friends.map(f=>`<div class="fb-banner"><div class="fb-blob" style="width:160px;height:160px;top:-40px;left:-30px;background:${f.c1};"></div><div class="fb-blob" style="width:120px;height:120px;top:10px;right:-20px;background:${f.c2};"></div><div class="fb-inner"><div class="fb-row"><div class="fb-av" style="background:${f.bg};color:${f.fg};">${f.av}</div><div><div class="fb-name">${f.name}</div><div class="fb-sub">${f.sub}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);">Just finished: ${f.bk}</div></div></div><div class="fb-quote">${f.q}</div><div class="fb-chips">${f.chips.map(c=>`<div class="fb-chip">${c}</div>`).join('')}</div></div></div>`).join('');
-  el.innerHTML=html;
-}
+// ── HOMEPAGE ──
+async function loadHome(){
+  // Hero: fetch a popular book from this week
+  try{
+    const res=await fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=fiction+bestseller+2024&maxResults=1&orderBy=relevance&langRestrict=en`);
+    const data=await res.json();
+    if(data.items&&data.items.length){
+      const info=data.items[0].volumeInfo||{};
+      const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+      let cover=isbn?olc(isbn.identifier,'L'):'';
+      if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||info.imageLinks.smallThumbnail||'').replace('http:','https:').replace('zoom=1','zoom=3');
+      const book={title:info.title||'',authors:info.authors||[''],rating:0,ratingCount:'',cover,description:(info.description||''),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
+      // Get real rating from our DB
+      const bsnap=await getDoc(doc(db,'books',bid(book)));
+      let avg='',cnt=0;
+      if(bsnap.exists()){const d=bsnap.data();avg=d.avgRating;cnt=d.ratingCount||0;}
+      const bd2=sj(book);
+      let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,(avg||0)-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.2,f).toFixed(2)}">&#9733;</span>`;}
+      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick='openBook(${bd2})'><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(book.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">Top pick</div><div class="hero-title">${esc(book.title)}</div><div class="hero-author">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">No ratings yet &#8212; be first!</div>`}</div></div></div>`;
+    }
+  }catch(e){console.log(e);}
 
-// PROFILE
-async function renderProfile(){
-  const el=document.getElementById('profileContent');
-  if(!currentUser){el.innerHTML=`<div style="padding:60px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">&#128218;</div><div style="font-size:18px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to Bookmarker</div><div style="font-size:13px;color:var(--text3);margin-bottom:24px;line-height:1.6;">Save ratings, write reviews,<br>and track every book you read</div><button onclick="openAuthModal()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px 32px;font-size:15px;font-weight:700;">Sign in or create account</button></div>`;return;}
-  el.innerHTML='<div class="loading-msg">Loading your profile...</div>';
-  const ini=(currentUser.displayName||currentUser.email||'U').charAt(0).toUpperCase();
-  const name=currentUser.displayName||currentUser.email.split('@')[0];
-  let myR=[];
-  try{const s=await getDocs(query(collection(db,'ratings'),where('userId','==',currentUser.uid),orderBy('timestamp','desc')));myR=s.docs.map(d=>d.data());}catch(e){}
-  const revC=myR.filter(r=>r.review).length;
-  const hd=Array(10).fill(0);myR.forEach(r=>{const i=Math.round(r.rating*2)-1;if(i>=0&&i<10)hd[i]++;});
-  const mx=Math.max(...hd)||1;
-  const histH=hd.map((v,i)=>{const h=Math.max(4,Math.round(v/mx*58));const lb=((i+1)*0.5).toFixed(1).replace('.0','');const op=(0.3+0.7*v/mx).toFixed(2);return`<div class="hb-col"><div class="hb-bar" style="height:${h}px;background:${TC};opacity:${op};"></div><div class="hb-lbl">${lb}</div></div>`;}).join('');
-  const achs=[
-    {icon:'&#127381;',name:'First rating',desc:'You rated your first book',cls:'r-common',lbl:'Common',ok:myR.length>=1},
-    {icon:'&#11088;',name:'Rated 10 books',desc:'10+ books rated',cls:'r-uncommon',lbl:'Uncommon',ok:myR.length>=10},
-    {icon:'&#128218;',name:'Wrote a review',desc:'You wrote your first review',cls:'r-common',lbl:'Common',ok:revC>=1},
-    {icon:'&#128278;',name:'First wishlist',desc:'Added a book to wishlist',cls:'r-common',lbl:'Common',ok:wishlist.length>=1},
-    {icon:'&#128214;',name:'Rated 50 books',desc:'50+ books rated',cls:'r-rare',lbl:'Rare',ok:myR.length>=50},
-    {icon:'&#127942;',name:'Rated 100 books',desc:'100+ books rated',cls:'r-legendary',lbl:'Legendary',ok:myR.length>=100},
-  ];
-  const achH=achs.map(a=>`<div class="ach-card${a.ok?'':' locked'}" onclick="openAchModal('${a.icon}','${a.name}','${a.desc}','${a.cls}','${a.lbl}')"><div class="ach-card-icon">${a.icon}</div><div class="ach-card-name">${a.name}</div><span class="ach-rarity ${a.cls}">${a.lbl}</span></div>`).join('');
-  const wlH=wishlist.length===0?'<div style="font-size:13px;color:var(--text3);padding:8px 0;">No books yet — tap &#128278; on any book</div>':wishlist.map(w=>`<div class="wl-item" onclick='openBook({title:"${esc(w.title)}",authors:${JSON.stringify(w.authors)},rating:0,ratingCount:"",cover:"${w.cover}",description:"",categories:[],publishedDate:"",isbn:"${w.isbn||''}",previewLink:""})'>${w.cover?`<img class="wl-cover" src="${w.cover}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')" alt="">`:'<div class="wl-cover"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(w.title)}</div><div style="font-size:11px;color:var(--text3);">${esc((w.authors||[]).join(', '))}</div></div><button class="wl-remove" onclick="event.stopPropagation();removeWL('${w.bookId}')">&#x2715;</button></div>`).join('');
-  const recH=myR.length===0?'<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>':myR.slice(0,10).map(r=>{let stars='';for(let i=0;i<Math.round(r.rating);i++)stars+='&#9733;';return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;')}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${stars} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);">${esc(r.review.substring(0,50))}${r.review.length>50?'...':''}</div>`:''}</div></div>`;}).join('');
-  el.innerHTML=
-    `<div class="pr-banner"><div class="pr-blob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="pr-blob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="pr-blob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="pr-inner"><div class="pr-av">${ini}</div><div class="pr-name">${esc(name)}</div><div class="pr-join">Bookmarker member</div><div class="cdots"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="pr-stats"><div class="pr-stat"><div class="pr-stat-n">${myR.length}</div><div class="pr-stat-l">Rated</div></div><div class="pr-stat"><div class="pr-stat-n">${revC}</div><div class="pr-stat-l">Reviews</div></div><div class="pr-stat"><div class="pr-stat-n">${wishlist.length}</div><div class="pr-stat-l">Wishlist</div></div></div></div></div>`+
-    `<div style="padding:18px;border-bottom:0.5px solid var(--border);"><div class="sec-title" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="hist-outer"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC}">&#9733;</span><div class="hist-bars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC}"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
-    `<div style="padding:18px;border-bottom:0.5px solid var(--border);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="sec-title" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="ach-scroll">${achH}</div></div>`+
-    `<div style="padding:18px;border-bottom:0.5px solid var(--border);"><div class="sec-title" style="padding:0;margin-bottom:12px;">Wishlist (${wishlist.length})</div>${wlH}</div>`+
-    `<div style="padding:18px;border-bottom:0.5px solid var(--border);"><div class="sec-title" style="padding:0;margin-bottom:12px;">Recently rated</div>${recH}</div>`+
-    `<div style="padding:18px 18px 30px;"><button onclick="window._signOut(window._auth).then(()=>showToast('Signed out'))" style="width:100%;background:var(--bg3);color:var(--text3);border:0.5px solid var(--border);border-radius:14px;padding:13px;font-size:14px;">Sign out</button></div>`;
-}
+  // Load initial genre
+  loadGenre('crime thriller',document.querySelector('.gtab.on'));
 
-window.openAchModal=(icon,title,desc,rCls,rLbl)=>{
-  document.getElementById('achIcon').innerHTML=icon;
-  document.getElementById('achTitle').textContent=title;
-  document.getElementById('achDesc').textContent=desc;
-  const b=document.getElementById('achBadge');b.textContent=rLbl;b.className='ach-rarity '+rCls;
-  document.getElementById('achModal').classList.add('open');
-};
-window.setTheme=c1=>{
-  TC=c1;
-  document.documentElement.style.setProperty('--tc',c1);
-  const dark={['#5DCAA5']:'#0a2a20',['#e8c84a']:'#1a0800',['#85B7EB']:'#0a1a30',['#ED93B1']:'#2a0a18',['#AFA9EC']:'#1a1040'};
-  document.documentElement.style.setProperty('--tc-dark',dark[c1]||'#001a10');
-  document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.style.background===c1));
-  const b1=document.getElementById('prB1');if(b1)b1.style.background=c1;
-};
-
-// HOMEPAGE
-function loadHome(){
-  const h=FEATURED[0];
-  const bd2=sj(h);let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,h.rating-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.25,f).toFixed(2)}">&#9733;</span>`;}
-  document.getElementById('heroCard').innerHTML=`<div class="hero-card" onclick='openBook(${bd2})'><img class="hero-img" src="${olc(h.isbn,'L')}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.src=''" alt="${esc(h.title)}" style="height:220px;width:100%;object-fit:cover;"><div class="hero-overlay"></div><div class="hero-content"><div class="hero-badge">Top pick this week</div><div class="hero-title">${esc(h.title)}</div><div class="hero-author">${esc(h.authors[0])} &middot; ${h.publishedDate}</div><div class="hero-rating"><div style="display:flex;gap:1px;">${stars}</div><div class="hero-avg">${h.rating}</div><div class="hero-cnt">${h.ratingCount} ratings</div></div></div></div>`;
-  const g=document.getElementById('homeGrid');g.innerHTML='';
-  FEATURED.slice(1).forEach(book=>{
-    const bd3=sj(book);const d=document.createElement('div');d.className='grid3-item';d.setAttribute('onclick',`openBook(${bd3})`);
-    d.innerHTML=`<img class="grid3-cover" src="${olc(book.isbn,'M')}" onerror="this.style.background='${grd(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}"><div class="grid3-title">${esc(book.title)}</div><div class="grid3-rating">&#9733; ${book.rating}</div>`;
-    g.appendChild(d);
-  });
-  GENRE_ISBNS.forEach((isbn,i)=>{
+  // Genre tab covers
+  const gISBN=['9781782392071','9780593135204','9780684801452','9781250800817','9780307743657','9780679748076'];
+  gISBN.forEach((isbn,i)=>{
     const el=document.getElementById('gc'+i);if(!el)return;
     const img=document.createElement('img');img.src=olc(isbn,'M');img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;';img.onerror=function(){this.style.display='none';};el.appendChild(img);
   });
 }
+
+// ── FRIENDS SYSTEM ──
+async function checkFriendReqs(){
+  if(!CU)return;
+  try{
+    const s=await getDocs(query(collection(db,'friendRequests'),where('toId','==',CU.uid),where('status','==','pending')));
+    const badge=document.getElementById('frReqBadge');
+    if(badge)badge.style.display=s.size>0?'block':'none';
+  }catch(e){}
+}
+
+async function renderFriends(){
+  const el=document.getElementById('friendsContent');
+  if(!CU){
+    el.innerHTML=`<div style="padding:50px 20px;text-align:center;" class="anim-fade-up"><div style="font-size:44px;margin-bottom:14px;">&#128101;</div><div style="font-size:17px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to see friends</div><div style="font-size:13px;color:var(--text3);margin-bottom:22px;">Connect with other readers</div><button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:12px 28px;font-size:14px;font-weight:700;">Sign in</button></div>`;
+    return;
+  }
+  el.innerHTML='<div class="lmsg"><div class="spin"></div>Loading friends...</div>';
+  try{
+    // Get pending requests TO me
+    const reqSnap=await getDocs(query(collection(db,'friendRequests'),where('toId','==',CU.uid),where('status','==','pending')));
+    // Get my friends
+    const frSnap=await getDocs(query(collection(db,'friends'),where('userId','==',CU.uid)));
+    const friendIds=frSnap.docs.map(d=>d.data().friendId);
+
+    let html='';
+
+    // Pending requests section
+    if(!reqSnap.empty){
+      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Friend requests (${reqSnap.size})</div>`;
+      for(const d of reqSnap.docs){
+        const r=d.data();
+        const c=avc(r.fromName.charCodeAt(0));
+        html+=`<div class="freq"><div class="freqav" style="background:${c.bg};color:${c.fg};">${ini(r.fromName)}</div><div><div class="freqname">${esc(r.fromName)}</div><div class="freqsub">Wants to be your friend</div></div><div class="freq-actions"><button class="freq-accept" onclick="acceptFR('${d.id}','${r.fromId}','${r.fromName}')">Accept</button><button class="freq-decline" onclick="declineFR('${d.id}')">&#x2715;</button></div></div>`;
+      }
+      html+='</div>';
+    }
+
+    // Friends list
+    html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your friends (${friendIds.length})</div>`;
+    if(friendIds.length===0){
+      html+=`<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">No friends yet &#8212; tap "Add friend" to search for people</div>`;
+    }else{
+      for(const fid of friendIds){
+        try{
+          const fsnap=await getDoc(doc(db,'users',fid));
+          if(!fsnap.exists())continue;
+          const fd=fsnap.data();
+          // Get their recent rating
+          const rsnap=await getDocs(query(collection(db,'ratings'),where('userId','==',fid),where('privacy','==','public'),orderBy('timestamp','desc'),limit(1)));
+          const rc=await getDocs(query(collection(db,'ratings'),where('userId','==',fid)));
+          const c=avc(fd.name.charCodeAt(0));
+          let recentHtml='';
+          if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
+          html+=`<div class="frbanner"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div></div></div></div>`;
+        }catch(e){}
+      }
+    }
+    html+='</div>';
+
+    el.innerHTML=html;
+    frCache=friendIds;
+  }catch(e){el.innerHTML=`<div class="lmsg">Error loading friends</div>`;}
+}
+
+window.openAddFriend=()=>{
+  if(!CU){openAuth();return;}
+  document.getElementById('friendSearch').value='';
+  document.getElementById('userSearchRes').innerHTML='';
+  document.getElementById('addFriendMov').classList.add('open');
+};
+
+let ustTimer=null;
+window.searchUsers=val=>{
+  clearTimeout(ustTimer);
+  const el=document.getElementById('userSearchRes');
+  if(val.length<2){el.innerHTML='';return;}
+  el.innerHTML='<div class="lmsg" style="padding:16px 0;"><div class="spin"></div>Searching...</div>';
+  ustTimer=setTimeout(async()=>{
+    try{
+      // Search by nameLower
+      const s=await getDocs(query(collection(db,'users'),where('nameLower','>=',val.toLowerCase()),where('nameLower','<=',val.toLowerCase()+'\uf8ff'),limit(10)));
+      const results=s.docs.map(d=>d.data()).filter(u=>u.uid!==CU.uid);
+      if(!results.length){el.innerHTML='<div style="padding:16px 0;text-align:center;font-size:13px;color:var(--text3);">No users found</div>';return;}
+      // Check existing friends/requests
+      const frSnap=await getDocs(query(collection(db,'friends'),where('userId','==',CU.uid)));
+      const myFriends=frSnap.docs.map(d=>d.data().friendId);
+      const reqSnap=await getDocs(query(collection(db,'friendRequests'),where('fromId','==',CU.uid),where('status','==','pending')));
+      const sentTo=reqSnap.docs.map(d=>d.data().toId);
+      el.innerHTML=results.map((u,i)=>{
+        const c=avc(u.name.charCodeAt(0));
+        const isFr=myFriends.includes(u.uid);
+        const isSent=sentTo.includes(u.uid);
+        const btn=isFr?`<span style="font-size:11px;color:var(--tc);">&#10003; Friends</span>`:isSent?`<span style="font-size:11px;color:var(--text3);">Request sent</span>`:`<button onclick="sendFR('${u.uid}','${esc(u.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:600;transition:transform 0.15s;">Add</button>`;
+        return`<div class="fcard anim-fade-up" style="animation-delay:${i*0.04}s;cursor:default;"><div class="fcardav" style="background:${c.bg};color:${c.fg};">${ini(u.name)}</div><div><div class="fcardname">${esc(u.name)}</div><div class="fcardsub">${esc(u.email||'')}</div></div>${btn}</div>`;
+      }).join('');
+    }catch(e){el.innerHTML=`<div style="padding:16px 0;text-align:center;font-size:13px;color:var(--text3);">Search error</div>`;}
+  },400);
+};
+
+window.sendFR=async(toId,toName)=>{
+  try{
+    await addDoc(collection(db,'friendRequests'),{fromId:CU.uid,fromName:CU.displayName||CU.email.split('@')[0],toId,toName,status:'pending',createdAt:serverTimestamp()});
+    showToast('Friend request sent to '+toName+' &#128075;');
+    // Refresh search
+    const q=document.getElementById('friendSearch').value;
+    if(q.length>=2)window.searchUsers(q);
+  }catch(e){showToast('Error sending request');}
+};
+window.acceptFR=async(reqId,fromId,fromName)=>{
+  try{
+    await updateDoc(doc(db,'friendRequests',reqId),{status:'accepted'});
+    // Create friendship both ways
+    await addDoc(collection(db,'friends'),{userId:CU.uid,friendId:fromId,createdAt:serverTimestamp()});
+    await addDoc(collection(db,'friends'),{userId:fromId,friendId:CU.uid,createdAt:serverTimestamp()});
+    showToast('You and '+fromName+' are now friends! &#127881;');
+    checkFriendReqs();
+    renderFriends();
+  }catch(e){showToast('Error accepting request');}
+};
+window.declineFR=async reqId=>{
+  try{await updateDoc(doc(db,'friendRequests',reqId),{status:'declined'});renderFriends();}catch(e){}
+};
+
+// ── PROFILE ──
+async function renderProfile(){
+  const el=document.getElementById('profileContent');
+  if(!CU){
+    el.innerHTML=`<div style="padding:70px 20px;text-align:center;" class="anim-fade-up"><div style="font-size:52px;margin-bottom:16px;">&#128218;</div><div style="font-size:20px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to Bookmarker</div><div style="font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.6;">Save ratings, write reviews<br>and track every book you read</div><button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px 36px;font-size:15px;font-weight:700;">Sign in or create account</button></div>`;
+    return;
+  }
+  el.innerHTML='<div class="lmsg"><div class="spin"></div>Loading your profile...</div>';
+  const name=CU.displayName||CU.email.split('@')[0];
+  let myR=[];
+  try{const s=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid),orderBy('timestamp','desc')));myR=s.docs.map(d=>d.data());}catch(e){}
+  const revC=myR.filter(r=>r.review).length;
+  // Histogram
+  const hd=Array(10).fill(0);myR.forEach(r=>{const i=Math.round(r.rating*2)-1;if(i>=0&&i<10)hd[i]++;});
+  const mx=Math.max(...hd)||1;
+  const histH=hd.map((v,i)=>{const h=Math.max(4,Math.round(v/mx*60));const lb=((i+1)*0.5).toFixed(1).replace('.0','');const op=(0.25+0.75*v/mx).toFixed(2);return`<div class="hbcol"><div class="hbbar" style="height:${h}px;background:${TC};opacity:${op};"></div><div class="hblbl">${lb}</div></div>`;}).join('');
+  // Achievements
+  const achs=[
+    {ic:'&#127381;',n:'First rating',d:'You rated your first book',c:'rc',l:'Common',ok:myR.length>=1},
+    {ic:'&#9997;&#65039;',n:'Wrote a review',d:'You wrote your first review',c:'rc',l:'Common',ok:revC>=1},
+    {ic:'&#128278;',n:'First wishlist',d:'Added a book to your wishlist',c:'rc',l:'Common',ok:wl.length>=1},
+    {ic:'&#11088;',n:'Rated 10 books',d:'10 or more books rated',c:'ru',l:'Uncommon',ok:myR.length>=10},
+    {ic:'&#128218;',n:'Rated 50 books',d:'50 or more books rated',c:'rr',l:'Rare',ok:myR.length>=50},
+    {ic:'&#127942;',n:'100 books',d:'100 or more books rated',c:'rl',l:'Legendary',ok:myR.length>=100},
+  ];
+  const achH=achs.map(a=>`<div class="achcard${a.ok?'':' locked'}" onclick="openAch('${a.ic}','${a.n}','${a.d}','${a.c}','${a.l}')"><div class="achcard-icon">${a.ic}</div><div class="achcard-name">${a.n}</div><span class="rarity ${a.c}">${a.l}</span></div>`).join('');
+  const wlH=wl.length===0?`<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>`:wl.map(w=>`<div class="wlitem" onclick='openBook({title:"${esc(w.title)}",authors:${JSON.stringify(w.authors||[])},rating:0,ratingCount:"",cover:"${w.cover||''}",description:"",categories:[],publishedDate:"",isbn:"${w.isbn||''}",previewLink:""})'>${w.cover?`<img class="wlcov" src="${w.cover}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')" alt="">`:'<div class="wlcov"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(w.title)}</div><div style="font-size:11px;color:var(--text3);">${esc((w.authors||[]).join(', '))}</div></div><button class="wlrm" onclick="event.stopPropagation();removeWL('${w.bookId}')">&#x2715;</button></div>`).join('');
+  const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
+  el.innerHTML=
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
+    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
+    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Wishlist (${wl.length})</div>${wlH}</div>`+
+    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Recently rated</div>${recH}</div>`+
+    `<div style="padding:18px 18px 32px;" class="anim-fade-up"><button onclick="window._so(window._auth).then(()=>{showToast('Signed out &#128075;');SS('home');})" style="width:100%;background:var(--bg3);color:var(--text3);border:0.5px solid var(--border);border-radius:14px;padding:13px;font-size:14px;transition:background 0.15s;">Sign out</button></div>`;
+}
+
+window.openAch=(ic,t,d,c,l)=>{
+  document.getElementById('achIco').innerHTML=ic;
+  document.getElementById('achT').textContent=t;
+  document.getElementById('achD').textContent=d;
+  const b=document.getElementById('achB');b.textContent=l;b.className='rarity '+c;
+  document.getElementById('achMov').classList.add('open');
+};
+
+window.setTheme=c1=>{
+  TC=c1;
+  const darks={'#5DCAA5':'#0a2a20','#e8c84a':'#1a0800','#85B7EB':'#0a1a30','#ED93B1':'#2a0a18','#AFA9EC':'#1a1040'};
+  TCD=darks[c1]||'#001a10';
+  document.documentElement.style.setProperty('--tc',c1);
+  document.documentElement.style.setProperty('--tc-dark',TCD);
+  document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.style.background===c1));
+  const b=document.getElementById('prB1');if(b)b.style.background=c1;
+};
+
 loadHome();
 </script>
 </body>
