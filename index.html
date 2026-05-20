@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -461,6 +462,17 @@ const GP=new GoogleAuthProvider();
 window._auth=auth; window._db=db; window._so=signOut;
 
 const GKEY='AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg';
+const NYTKEY='u3PbA4nCQUfhpXuf5tlnpru5CcUo15cUoEHC2RcT8draCIOo';
+
+// NYT list names per genre
+const NYT_LISTS={
+  'crime thriller':'hardcover-mystery-thriller',
+  'science fiction':'science-fiction',
+  'historical fiction':'hardcover-fiction',
+  'romance novel':'romance',
+  'horror fiction':'horror',
+  'literary fiction':'hardcover-fiction',
+};
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
 let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={};
@@ -768,29 +780,53 @@ window._ob=key=>{const b=_bookStore[key];if(b)openBook(b);else showToast('Book n
 window._qwl=key=>{const b=_bookStore[key];if(b)qWL(b);};
 
 // ── GENRE ──
-window.loadGenre=(q,tabEl)=>{
+// Render a list of NYT books into the home grid
+function renderNYTBooks(nytBooks){
+  const g=document.getElementById('homeGrid');
+  if(!nytBooks.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results</div>';return;}
+  g.innerHTML=nytBooks.map((b,i)=>{
+    const cover=b.book_image||olc(b.primary_isbn13,'M');
+    const book={title:b.title,authors:[b.author],rating:0,ratingCount:'',cover,description:b.description||'',categories:[],publishedDate:'',isbn:b.primary_isbn13||'',previewLink:''};
+    const key='nyt'+i+'_'+Date.now();_bookStore[key]=book;
+    const ch=`<img class="gcov" src="${cover}" onerror="this.src='${olc(b.primary_isbn13,'M')}';this.onerror=null;" loading="lazy" alt="${esc(b.title)}">`;
+    const rank=i===0?'<div style="position:absolute;top:6px;left:6px;background:var(--tc);color:var(--tc-dark);font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#1</div>':i<3?`<div style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#${i+1}</div>`:'';
+    return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}${rank}<div id="bmr_${key}" style="position:absolute;bottom:6px;right:5px;display:none;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;"></div></div><div class="gtitle">${esc(b.title)}</div><div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc(b.author)}</div></div>`;
+  }).join('');
+  // Load real Bookmarker ratings in background
+  nytBooks.forEach((b,i)=>{
+    if(!b.primary_isbn13)return;
+    const key='nyt'+i+'_';
+    getDoc(doc(db,'books',b.primary_isbn13)).then(bs=>{
+      if(bs.exists()&&bs.data().ratingCount>0){
+        const d=bs.data();
+        // Find the pill by partial key match
+        const pill=document.querySelector(`[id^="bmr_nyt${i}_"]`);
+        if(pill){pill.textContent='★ '+d.avgRating;pill.style.display='block';}
+      }
+    }).catch(()=>{});
+  });
+}
+
+window.loadGenre=async(q,tabEl)=>{
   document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('on'));
   if(tabEl)tabEl.classList.add('on');
   const label=document.getElementById('gridLabel');
   if(label)label.textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
   const g=document.getElementById('homeGrid');
   g.innerHTML=Array(6).fill(0).map(()=>`<div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>`).join('');
-  // Boost query toward popular books — Google's relevance prioritises books with more reviews/sales
-  const popQuery='subject:'+q+'+bestseller';
-  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(popQuery)}&maxResults=24&orderBy=relevance&langRestrict=en&printType=books`)
+  // Try NYT first
+  const nytList=NYT_LISTS[q]||'hardcover-fiction';
+  try{
+    const r=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/${nytList}.json?api-key=${NYTKEY}`);
+    const d=await r.json();
+    const books=(d.results&&d.results.books)||[];
+    if(books.length){renderNYTBooks(books);return;}
+  }catch(e){console.log('NYT failed, falling back to Google',e);}
+  // Fallback to Google Books
+  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=subject:${encodeURIComponent(q)}+bestseller&maxResults=15&orderBy=relevance&langRestrict=en&printType=books`)
     .then(r=>r.json()).then(d=>{
-      let items=d.items||[];
-      // Filter out items with no cover and no ratings (less popular)
-      items=items.filter(item=>{
-        const info=item.volumeInfo||{};
-        return info.imageLinks||info.averageRating||info.ratingsCount;
-      });
-      // Sort by Google's ratingsCount (real signal of popularity) when available
-      items.sort((a,b)=>{
-        const ar=(a.volumeInfo&&a.volumeInfo.ratingsCount)||0;
-        const br=(b.volumeInfo&&b.volumeInfo.ratingsCount)||0;
-        return br-ar;
-      });
+      let items=(d.items||[]).filter(it=>{const v=it.volumeInfo||{};return v.imageLinks&&v.ratingsCount>100;});
+      items.sort((a,b)=>((b.volumeInfo||{}).ratingsCount||0)-((a.volumeInfo||{}).ratingsCount||0));
       items=items.slice(0,9);
       if(!items.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
       g.innerHTML=items.map((item,i)=>{
@@ -801,52 +837,10 @@ window.loadGenre=(q,tabEl)=>{
         const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
         const key='g'+i+'_'+Date.now();_bookStore[key]=book;
         const ch=cover?`<img class="gcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}">`:`<div class="gcov" style="background:${grad(book.title)};"></div>`;
-        const avgPill=info.averageRating?`<div style="position:absolute;bottom:6px;right:5px;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:700;color:#e8c84a;display:flex;align-items:center;gap:2px;">&#9733; ${info.averageRating}</div>`:'';
-        const coverWrap=`<div style="position:relative;">${ch}${avgPill}</div>`;
-        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')">${coverWrap}<div class="gtitle">${esc(book.title)}</div></div>`;
+        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}</div><div class="gtitle">${esc(book.title)}</div></div>`;
       }).join('');
-      // Enrich with real Bookmarker ratings in background
-      enrichGridRatings(items);
-    }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load &#8212; check connection</div>';});
+    }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load — check connection</div>';});
 };
-
-// Load real Bookmarker ratings for visible books and update their display
-async function enrichGridRatings(items){
-  for(let i=0;i<items.length&&i<9;i++){
-    const info=items[i].volumeInfo||{};
-    const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
-    if(!isbn)continue;
-    const key='g'+i+'_';
-    // Find the matching key in _bookStore
-    const bk=Object.entries(_bookStore).find(([k,v])=>k.startsWith('g'+i+'_')&&v.isbn===isbn.identifier);
-    if(!bk)continue;
-    try{
-      const bs=await getDoc(doc(db,'books',isbn.identifier));
-      if(bs.exists()){
-        const d=bs.data();
-        if(d.ratingCount>0){
-          // Find the grid item and update rating display
-          const els=document.querySelectorAll('#homeGrid .gi');
-          const el=els[i];
-          if(el){
-            // Find the cover wrapper div (position:relative) to place pill over image
-            const wrap=el.querySelector('[style*="position:relative"]');
-            const target=wrap||el;
-            if(!wrap){
-              // wrap the cover img ourselves
-              const gcov=el.querySelector('.gcov');
-              if(gcov){const wr=document.createElement('div');wr.style.position='relative';gcov.parentNode.insertBefore(wr,gcov);wr.appendChild(gcov);target=wr;}
-            }
-            let existing=target.querySelector('.bm-rating');
-            if(!existing){existing=document.createElement('div');existing.className='bm-rating';target.appendChild(existing);}
-            existing.style.cssText='position:absolute;bottom:6px;right:5px;background:rgba(93,202,165,0.9);backdrop-filter:blur(4px);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;';
-            existing.innerHTML=`&#9733; ${d.avgRating}`;
-          }
-        }
-      }
-    }catch(e){}
-  }
-}
 
 // ── FRIEND PROFILE ──
 window.viewFriendProfile=async(uid,name,ratingCount)=>{
@@ -894,23 +888,25 @@ window.viewFriendProfile=async(uid,name,ratingCount)=>{
 async function loadHome(){
   // Hero: fetch a popular book from this week
   try{
-    const res=await fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=fiction+bestseller+2024&maxResults=1&orderBy=relevance&langRestrict=en`);
-    const data=await res.json();
-    if(data.items&&data.items.length){
-      const info=data.items[0].volumeInfo||{};
-      const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
-      let cover=isbn?olc(isbn.identifier,'L'):'';
-      if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||info.imageLinks.smallThumbnail||'').replace('http:','https:').replace('zoom=1','zoom=3');
-      const book={title:info.title||'',authors:info.authors||[''],rating:0,ratingCount:'',cover,description:(info.description||''),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
-      // Get real rating from our DB
-      const bsnap=await getDoc(doc(db,'books',bid(book)));
-      let avg='',cnt=0;
-      if(bsnap.exists()){const d=bsnap.data();avg=d.avgRating;cnt=d.ratingCount||0;}
+    // Use NYT #1 hardcover fiction as the hero
+    const nytRes=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYTKEY}`);
+    const nytData=await nytRes.json();
+    const nytBooks=(nytData.results&&nytData.results.books)||[];
+    if(nytBooks.length){
+      const b=nytBooks[0];
+      const cover=b.book_image||olc(b.primary_isbn13,'L');
+      const book={title:b.title,authors:[b.author],rating:0,ratingCount:'',cover,description:b.description||'',categories:['Fiction'],publishedDate:'',isbn:b.primary_isbn13||'',previewLink:''};
       _bookStore['hero']=book;
+      // Get real Bookmarker rating
+      let avg=null,cnt=0;
+      if(b.primary_isbn13){
+        try{const bs=await getDoc(doc(db,'books',b.primary_isbn13));if(bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}}catch(e){}
+      }
       let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,(avg||0)-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.2,f).toFixed(2)}">&#9733;</span>`;}
-      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')"><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(book.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">Top pick</div><div class="hero-title">${esc(book.title)}</div><div class="hero-author">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">No ratings yet &#8212; be first!</div>`}</div></div></div>`;
+      const weeksOn=b.weeks_on_list>0?`<span style="font-size:10px;color:rgba(255,255,255,0.5);margin-left:6px;">${b.weeks_on_list} week${b.weeks_on_list!==1?'s':''} on list</span>`:'';
+      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')"><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(b.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">&#35;1 NYT Bestseller</div><div class="hero-title">${esc(b.title)}</div><div class="hero-author">${esc(b.author)}${weeksOn}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} Bookmarker ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">Be the first to rate on Bookmarker!</div>`}</div></div></div>`;
     }
-  }catch(e){console.log(e);}
+  }catch(e){console.log('Hero load error',e);}
 
   // Load initial genre
   loadGenre('crime thriller',document.querySelector('.gtab.on'));
