@@ -715,9 +715,23 @@ window.loadGenre=(q,tabEl)=>{
   if(label)label.textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
   const g=document.getElementById('homeGrid');
   g.innerHTML=Array(6).fill(0).map(()=>`<div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>`).join('');
-  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=subject:${encodeURIComponent(q)}&maxResults=9&orderBy=relevance&langRestrict=en`)
+  // Boost query toward popular books — Google's relevance prioritises books with more reviews/sales
+  const popQuery='subject:'+q+'+bestseller';
+  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(popQuery)}&maxResults=24&orderBy=relevance&langRestrict=en&printType=books`)
     .then(r=>r.json()).then(d=>{
-      const items=d.items||[];
+      let items=d.items||[];
+      // Filter out items with no cover and no ratings (less popular)
+      items=items.filter(item=>{
+        const info=item.volumeInfo||{};
+        return info.imageLinks||info.averageRating||info.ratingsCount;
+      });
+      // Sort by Google's ratingsCount (real signal of popularity) when available
+      items.sort((a,b)=>{
+        const ar=(a.volumeInfo&&a.volumeInfo.ratingsCount)||0;
+        const br=(b.volumeInfo&&b.volumeInfo.ratingsCount)||0;
+        return br-ar;
+      });
+      items=items.slice(0,9);
       if(!items.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
       g.innerHTML=items.map((item,i)=>{
         const info=item.volumeInfo||{};
@@ -791,9 +805,21 @@ async function renderFriends(){
 
     let html='';
 
+    // YOUR OWN BANNER at the top — shows what your friends see when they look at you
+    try{
+      const myRecentRating=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid),where('privacy','==','public'),orderBy('timestamp','desc'),limit(1)));
+      const myAllRatings=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));
+      const myName=CU.displayName||CU.email.split('@')[0];
+      const c=avc(myName.charCodeAt(0));
+      let myRecentHtml='';
+      if(!myRecentRating.empty){const r=myRecentRating.docs[0].data();myRecentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
+      else{myRecentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Rate your first book to share with friends</div>`;}
+      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname">${esc(myName)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div></div></div></div>`;
+    }catch(e){}
+
     // Pending requests section
     if(!reqSnap.empty){
-      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Friend requests (${reqSnap.size})</div>`;
+      html+=`<div style="padding:0 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Friend requests (${reqSnap.size})</div>`;
       for(const d of reqSnap.docs){
         const r=d.data();
         const c=avc(r.fromName.charCodeAt(0));
@@ -805,7 +831,7 @@ async function renderFriends(){
     // Friends list
     html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your friends (${friendIds.length})</div>`;
     if(friendIds.length===0){
-      html+=`<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">No friends yet &#8212; tap "Add friend" to search for people</div>`;
+      html+=`<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">No friends yet &#8212; tap "Add friend" at the top to search for people</div>`;
     }else{
       for(const fid of friendIds){
         try{
