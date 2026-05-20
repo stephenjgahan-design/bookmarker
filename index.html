@@ -890,19 +890,44 @@ window.doSave=async()=>{
 window._storeBook=(key,book)=>{_bookStore[key]=book;};
 window.openBook=async book=>{
   currentBook=book;SS('book');updWLBtn();
-  const id=bid(book);
+  // Show page immediately with what we have
   const cov=book.cover?`<img class="bkcov" src="${book.cover}" onerror="this.style.background='${grad(book.title)}';this.removeAttribute('src')" alt="${esc(book.title)}">`:`<div class="bkcov" style="background:${grad(book.title)};"></div>`;
-  // Show immediately, load real data in background
   _renderBP(book,null,0,cov,'<div class="lmsg" style="padding:20px 0;"><div class="spin"></div>Loading...</div>');
+  // If book is missing description (hardcoded genre books), fetch from Google Books by ISBN
+  if((!book.description||book.description.length<10)&&book.isbn){
+    try{
+      const gr=await fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=isbn:${book.isbn}&maxResults=1`);
+      const gd=await gr.json();
+      if(gd.items&&gd.items.length){
+        const v=gd.items[0].volumeInfo||{};
+        book.description=v.description||'';
+        book.categories=v.categories||book.categories||[];
+        book.publishedDate=v.publishedDate?v.publishedDate.substring(0,4):book.publishedDate||'';
+        book.previewLink=v.previewLink||book.previewLink||'';
+        if(!book.cover&&v.imageLinks){
+          book.cover=(v.imageLinks.thumbnail||'').replace('http:','https:');
+          currentBook=book;
+        }
+      }
+    }catch(e){console.log('Google Books fetch failed',e);}
+  }
+  // Now load Firestore data (ratings + reviews) — with 5s timeout to avoid hanging
+  const id=bid(book);
   try{
-    const[bs,rs]=await Promise.all([
-      getDoc(doc(db,'books',id)),
-      getDocs(query(collection(db,'ratings'),where('bookId','==',id)))
-    ]);
+    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
+    const[bs,rs]=await Promise.race([
+      Promise.all([getDoc(doc(db,'books',id)),getDocs(query(collection(db,'ratings'),where('bookId','==',id)))]),
+      timeout.then(()=>{throw new Error('timeout');})
+    ]).catch(async()=>{
+      // Timeout — just show page without ratings
+      return[null,null];
+    });
     let avg=null,cnt=0;
-    if(bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}
-    _renderBP(book,avg,cnt,cov,_buildRevs(rs));
-  }catch(e){_renderBP(book,null,0,cov,'<div style="padding:16px 0;font-size:13px;color:var(--text3);">Sign in to see reviews</div>');}
+    if(bs&&bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}
+    _renderBP(book,avg,cnt,cov,rs?_buildRevs(rs):'<div style="padding:16px 0;font-size:13px;color:var(--text3);">Sign in to see reviews</div>');
+  }catch(e){
+    _renderBP(book,null,0,cov,'<div style="padding:16px 0;font-size:13px;color:var(--text3);">Could not load reviews</div>');
+  }
 };
 
 function _buildRevs(snap){
@@ -920,11 +945,11 @@ function _renderBP(book,avg,cnt,cov,revHtml){
   let frac='';
   if(hasR){for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,r-(i-1)));frac+=`<span class="fs"><span class="bg">&#9733;</span><span class="fg" style="width:${Math.round(f*100)}%;">&#9733;</span></span>`;}}
   const theme=(book.categories||[]).slice(0,6).map(c=>`<div class="tpill">${esc(c)}</div>`).join('')||'<div class="tpill">Fiction</div>';
-  const buy=book.previewLink||'https://books.google.com/books?q='+encodeURIComponent(book.title);
+  const buy=book.previewLink||`https://www.google.com/search?q=${encodeURIComponent(book.title+' '+((book.authors||[])[0]||'')+' book')}`;
   const won=inWL(book);
   document.getElementById('bookContent').innerHTML=
     `<div class="bkhero anim-fade-up">${cov}<div class="bkmeta"><div class="bktitle">${esc(book.title)}</div><div class="bkauth">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div>${hasR?`<div class="fstars">${frac}</div><div class="avgnum">${r}</div><div class="rcnt">${cnt.toLocaleString()} rating${cnt!==1?'s':''} on Bookmarker</div>`:`<div style="font-size:13px;color:var(--tc);margin-bottom:12px;font-weight:500;">Be the first to rate!</div>`}<a href="${buy}" target="_blank" class="buybtn">&#128722; Buy on Google Books</a><button class="wlbig${won?' on':''}" onclick="toggleWL()">${won?'&#128278; In your wishlist':'&#128278; Add to wishlist'}</button></div></div>`+
-    `<div class="bsec anim-fade-up" style="animation-delay:0.05s;"><div class="bsec-t">Summary<span class="aipill">AI</span></div><div class="sumtext">${esc((book.description||'No description available.').substring(0,340))}</div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.05s;"><div class="bsec-t">Summary<span class="aipill">AI</span></div><div class="sumtext">${esc((book.description||'').substring(0,340))||'<span style="color:var(--text3);">Loading description...</span>'}</div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.1s;"><div class="bsec-t">Themes</div><div class="tpills">${theme}</div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.12s;"><div class="bsec-t">Tone</div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#555;font-size:11px;">Dark</span></div><div class="tone-tr"><div class="tone-f" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow</span><span class="tone-lbl" style="color:#555;font-size:11px;">Fast</span></div><div class="tone-tr"><div class="tone-f" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#555;font-size:11px;">Heavy</span></div><div class="tone-tr"><div class="tone-f" style="width:62%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.15s;"><div class="bsec-t">Reviews${cnt?` (${cnt.toLocaleString()})`:''}</div><div id="revList">${revHtml}</div></div>`+
