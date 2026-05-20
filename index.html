@@ -688,7 +688,7 @@ window.openBook=async book=>{
   try{
     const[bs,rs]=await Promise.all([
       getDoc(doc(db,'books',id)),
-      getDocs(query(collection(db,'ratings'),where('bookId','==',id),where('privacy','==','public'),orderBy('timestamp','desc'),limit(50)))
+      getDocs(query(collection(db,'ratings'),where('bookId','==',id)))
     ]);
     let avg=null,cnt=0;
     if(bs.exists()){const d=bs.data();avg=d.avgRating;cnt=d.ratingCount||0;}
@@ -698,7 +698,11 @@ window.openBook=async book=>{
 
 function _buildRevs(snap){
   if(!snap||snap.empty)return`<div style="padding:16px 0;font-size:14px;color:var(--tc);font-weight:500;">&#127381; Be the first to review this book!</div>`;
-  return snap.docs.map((d,i)=>{const r=d.data();let st='';for(let j=1;j<=5;j++)st+=j<=Math.round(r.rating)?'&#9733;':'&#9734;';const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';return`<div class="revi" style="animation-delay:${i*0.04}s;"><div class="revhdr"><span class="revname">${esc(r.userName)}</span><span class="revpill">${r.rating}&#9733;</span></div><div class="revstars">${st}</div>${r.review?`<div class="revbody">${esc(r.review)}</div>`:''}<div class="revdate">${dt}</div></div>`;}).join('');
+  // Filter public only and sort newest first in JS (no composite index needed)
+  let docs=snap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy);
+  docs.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+  if(!docs.length)return`<div style="padding:16px 0;font-size:14px;color:var(--tc);font-weight:500;">&#127381; Be the first to review this book!</div>`;
+  return docs.map((r,i)=>{let st='';for(let j=1;j<=5;j++)st+=j<=Math.round(r.rating)?'&#9733;':'&#9734;';const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';return`<div class="revi" style="animation-delay:${i*0.04}s;"><div class="revhdr"><span class="revname">${esc(r.userName)}</span><span class="revpill">${r.rating}&#9733;</span></div><div class="revstars">${st}</div>${r.review?`<div class="revbody">${esc(r.review)}</div>`:''}<div class="revdate">${dt}</div></div>`;}).join('');
 }
 
 function _renderBP(book,avg,cnt,cov,revHtml){
@@ -849,8 +853,10 @@ async function renderFriends(){
 
     // YOUR OWN BANNER at the top — shows what your friends see when they look at you
     try{
-      const myRecentRating=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid),where('privacy','==','public'),orderBy('timestamp','desc'),limit(1)));
-      const myAllRatings=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));
+      const _myAllSnap=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));
+      const myAllRatings=_myAllSnap;
+      const _myPub=_myAllSnap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+      const myRecentRating={empty:_myPub.length===0,docs:_myPub.map(r=>({data:()=>r}))};
       const myName=CU.displayName||CU.email.split('@')[0];
       const c=avc(myName.charCodeAt(0));
       let myRecentHtml='';
@@ -881,8 +887,10 @@ async function renderFriends(){
           if(!fsnap.exists())continue;
           const fd=fsnap.data();
           // Get their recent rating
-          const rsnap=await getDocs(query(collection(db,'ratings'),where('userId','==',fid),where('privacy','==','public'),orderBy('timestamp','desc'),limit(1)));
-          const rc=await getDocs(query(collection(db,'ratings'),where('userId','==',fid)));
+          const _fsnap=await getDocs(query(collection(db,'ratings'),where('userId','==',fid)));
+          const rc=_fsnap;
+          const _fpub=_fsnap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+          const rsnap={empty:_fpub.length===0,docs:_fpub.map(r=>({data:()=>r}))};
           const c=avc(fd.name.charCodeAt(0));
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
@@ -966,7 +974,7 @@ async function renderProfile(){
   el.innerHTML='<div class="lmsg"><div class="spin"></div>Loading your profile...</div>';
   const name=CU.displayName||CU.email.split('@')[0];
   let myR=[];
-  try{const s=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid),orderBy('timestamp','desc')));myR=s.docs.map(d=>d.data());}catch(e){}
+  try{const s=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));myR=s.docs.map(d=>d.data());myR.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));}catch(e){console.error('Profile load error:',e);}
   const revC=myR.filter(r=>r.review).length;
   // Histogram
   const hd=Array(10).fill(0);myR.forEach(r=>{const i=Math.round(r.rating*2)-1;if(i>=0&&i<10)hd[i]++;});
@@ -1015,3 +1023,4 @@ loadHome();
 </script>
 </body>
 </html>
+
