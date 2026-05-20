@@ -466,12 +466,22 @@ const NYTKEY='u3PbA4nCQUfhpXuf5tlnpru5CcUo15cUoEHC2RcT8draCIOo';
 
 // NYT list names per genre
 const NYT_LISTS={
-  'crime thriller':'hardcover-mystery-thriller',
-  'science fiction':'science-fiction',
+  'crime thriller':null,
+  'science fiction':null,
   'historical fiction':'hardcover-fiction',
-  'romance novel':'romance',
-  'horror fiction':'horror',
-  'literary fiction':'hardcover-fiction',
+  'romance novel':null,
+  'horror fiction':null,
+  'literary fiction':'combined-print-and-e-book-fiction',
+};
+
+// Curated popular author searches per genre (fallback when no NYT list)
+const GENRE_QUERIES={
+  'crime thriller':'intitle:thriller+inauthor:james+OR+inauthor:Patterson+OR+inauthor:Connelly+OR+inauthor:Child',
+  'science fiction':'intitle:sci-fi+inauthor:Sanderson+OR+inauthor:Weir+OR+inauthor:Pierce+Brown+OR+inauthor:Scalzi',
+  'romance novel':'inauthor:Colleen+Hoover+OR+inauthor:Emily+Henry+OR+inauthor:Helen+Hoang+OR+inauthor:Ali+Hazelwood',
+  'horror fiction':'inauthor:Stephen+King+OR+inauthor:Paul+Tremblay+OR+inauthor:Grady+Hendrix+OR+inauthor:Joe+Hill',
+  'historical fiction':'subject:historical+fiction+inauthor:Hilary+Mantel+OR+inauthor:Ken+Follett+OR+inauthor:Anthony+Burgess',
+  'literary fiction':'subject:literary+fiction+inauthor:Sally+Rooney+OR+inauthor:Colson+Whitehead+OR+inauthor:Kazuo+Ishiguro',
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
@@ -822,11 +832,15 @@ window.loadGenre=async(q,tabEl)=>{
     const books=(d.results&&d.results.books)||[];
     if(books.length){renderNYTBooks(books);return;}
   }catch(e){console.log('NYT failed, falling back to Google',e);}
-  // Fallback to Google Books
-  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=subject:${encodeURIComponent(q)}+bestseller&maxResults=15&orderBy=relevance&langRestrict=en&printType=books`)
+  // Fallback: use curated genre query for accurate results
+  const gq=GENRE_QUERIES[q]||('subject:'+q);
+  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(gq)}&maxResults=20&orderBy=relevance&langRestrict=en&printType=books`)
     .then(r=>r.json()).then(d=>{
-      let items=(d.items||[]).filter(it=>{const v=it.volumeInfo||{};return v.imageLinks&&v.ratingsCount>100;});
+      let items=d.items||[];
+      // Sort by ratingsCount so most-read books appear first
       items.sort((a,b)=>((b.volumeInfo||{}).ratingsCount||0)-((a.volumeInfo||{}).ratingsCount||0));
+      // Filter to only books with covers
+      items=items.filter(it=>(it.volumeInfo||{}).imageLinks);
       items=items.slice(0,9);
       if(!items.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
       g.innerHTML=items.map((item,i)=>{
@@ -837,7 +851,8 @@ window.loadGenre=async(q,tabEl)=>{
         const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
         const key='g'+i+'_'+Date.now();_bookStore[key]=book;
         const ch=cover?`<img class="gcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}">`:`<div class="gcov" style="background:${grad(book.title)};"></div>`;
-        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}</div><div class="gtitle">${esc(book.title)}</div></div>`;
+        const avgPill=info.averageRating?`<div style="position:absolute;bottom:6px;right:5px;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#e8c84a;">&#9733; ${info.averageRating}</div>`:'';
+        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}${avgPill}</div><div class="gtitle">${esc(book.title)}</div><div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc((info.authors||[''])[0])}</div></div>`;
       }).join('');
     }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load — check connection</div>';});
 };
