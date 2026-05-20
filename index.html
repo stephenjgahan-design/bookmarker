@@ -361,7 +361,7 @@ img{display:block;}
 </div><!-- end app -->
 
 <nav class="bnav">
-  <button class="nb on" id="nb-home" onclick="SS('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home<div class="nb-dot"></div></button>
+  <button class="nb on" id="nb-home" onclick="SS('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 012-2h12a2 2 0 012 2v13M4 19H2m2 0h16m0 0h2M9 10h6M9 14h6"/></svg>Shelf<div class="nb-dot"></div></button>
   <button class="nb" id="nb-search" onclick="SS('search')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<div class="nb-dot"></div></button>
   <button class="nb" id="nb-friends" onclick="SS('friends')" style="position:relative;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>Friends<div class="nb-dot"></div><div class="nbadge" id="frReqBadge" style="display:none;"></div></button>
   <button class="nb" id="nb-profile" onclick="SS('profile')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile<div class="nb-dot"></div></button>
@@ -438,6 +438,15 @@ img{display:block;}
   </div>
 </div>
 
+<!-- FRIEND PROFILE MODAL -->
+<div class="mov" id="friendProfileMov">
+  <div class="msheet" style="max-height:88vh;">
+    <div class="mhandle"></div>
+    <button onclick="closeM('friendProfileMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div id="friendProfileContent"><div class="lmsg"><div class="spin"></div>Loading...</div></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -454,7 +463,7 @@ window._auth=auth; window._db=db; window._so=signOut;
 const GKEY='AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg';
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
-let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null;
+let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={};
 
 // HELPERS
 const olc=(i,s)=>`https://covers.openlibrary.org/b/isbn/${i}-${s||'M'}.jpg?default=false`;
@@ -679,6 +688,7 @@ window.doSave=async()=>{
 };
 
 // ── BOOK PAGE ──
+window._storeBook=(key,book)=>{_bookStore[key]=book;};
 window.openBook=async book=>{
   currentBook=book;SS('book');updWLBtn();
   const id=bid(book);
@@ -747,11 +757,15 @@ function renderSearch(items){
     let cover=isbn?olc(isbn.identifier,'M'):'';
     if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
     const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
-    const bd2=sj(book);const won=inWL(book);
+    const key='s'+i+'_'+Date.now();
+    _bookStore[key]=book;
+    const won=inWL(book);
     const ch=cover?`<img class="rcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.removeAttribute('src')" loading="lazy" alt="${esc(book.title)}">`:`<div class="rcov" style="background:${grad(book.title)};"></div>`;
-    return`<div class="ri anim-fade-up" style="animation-delay:${i*0.03}s;"><div onclick='openBook(${bd2})'>${ch}<div class="rtitle">${esc(book.title)}</div><div class="rauthor">${esc((info.authors||[''])[0])}</div></div><button class="wlbtn${won?' on':''}" onclick='qWL(${bd2})' title="${won?'Remove':'Add to wishlist'}">${won?'&#128278;':'&#43;'}</button></div>`;
+    return`<div class="ri anim-fade-up" style="animation-delay:${i*0.03}s;"><div onclick="_ob('${key}')">${ch}<div class="rtitle">${esc(book.title)}</div><div class="rauthor">${esc((info.authors||[''])[0])}</div></div><button class="wlbtn${won?' on':''}" onclick="_qwl('${key}')" title="${won?'Remove':'Add to wishlist'}">${won?'&#128278;':'&#43;'}</button></div>`;
   }).join('');
 }
+window._ob=key=>{const b=_bookStore[key];if(b)openBook(b);else showToast('Book not found - try again');};
+window._qwl=key=>{const b=_bookStore[key];if(b)qWL(b);};
 
 // ── GENRE ──
 window.loadGenre=(q,tabEl)=>{
@@ -785,11 +799,85 @@ window.loadGenre=(q,tabEl)=>{
         let cover=isbn?olc(isbn.identifier,'M'):'';
         if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
         const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
-        const bd2=sj(book);
+        const key='g'+i+'_'+Date.now();_bookStore[key]=book;
         const ch=cover?`<img class="gcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}">`:`<div class="gcov" style="background:${grad(book.title)};"></div>`;
-        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick='openBook(${bd2})'>${ch}<div class="gtitle">${esc(book.title)}</div></div>`;
+        const rc=info.ratingsCount?`<div style="font-size:10px;color:var(--tc);margin-top:2px;">&#9733; ${info.averageRating||''} <span style="color:var(--text3);">(${info.ratingsCount.toLocaleString()})</span></div>`:'';
+        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')">${ch}<div class="gtitle">${esc(book.title)}</div>${rc}</div>`;
       }).join('');
+      // Enrich with real Bookmarker ratings in background
+      enrichGridRatings(items);
     }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load &#8212; check connection</div>';});
+};
+
+// Load real Bookmarker ratings for visible books and update their display
+async function enrichGridRatings(items){
+  for(let i=0;i<items.length&&i<9;i++){
+    const info=items[i].volumeInfo||{};
+    const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+    if(!isbn)continue;
+    const key='g'+i+'_';
+    // Find the matching key in _bookStore
+    const bk=Object.entries(_bookStore).find(([k,v])=>k.startsWith('g'+i+'_')&&v.isbn===isbn.identifier);
+    if(!bk)continue;
+    try{
+      const bs=await getDoc(doc(db,'books',isbn.identifier));
+      if(bs.exists()){
+        const d=bs.data();
+        if(d.ratingCount>0){
+          // Find the grid item and update rating display
+          const els=document.querySelectorAll('#homeGrid .gi');
+          const el=els[i];
+          if(el){
+            let existing=el.querySelector('.bm-rating');
+            if(!existing){existing=document.createElement('div');existing.className='bm-rating';el.appendChild(existing);}
+            existing.innerHTML=`<span style="font-size:10px;color:var(--tc);font-weight:600;">&#9733; ${d.avgRating}</span><span style="font-size:9px;color:var(--text3);margin-left:3px;">(${d.ratingCount})</span>`;
+          }
+        }
+      }
+    }catch(e){}
+  }
+}
+
+// ── FRIEND PROFILE ──
+window.viewFriendProfile=async(uid,name,ratingCount)=>{
+  const el=document.getElementById('friendProfileContent');
+  document.getElementById('friendProfileMov').classList.add('open');
+  el.innerHTML='<div class="lmsg"><div class="spin"></div>Loading profile...</div>';
+  try{
+    // Get their public ratings
+    const snap=await getDocs(query(collection(db,'ratings'),where('userId','==',uid)));
+    const ratings=snap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy);
+    ratings.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+    const revCount=ratings.filter(r=>r.review).length;
+    // Build histogram
+    const hd=Array(10).fill(0);ratings.forEach(r=>{const i=Math.round(r.rating*2)-1;if(i>=0&&i<10)hd[i]++;});
+    const mx=Math.max(...hd)||1;
+    const histH=hd.map((v,i)=>{const h=Math.max(4,Math.round(v/mx*50));const lb=((i+1)*0.5).toFixed(1).replace('.0','');const op=(0.25+0.75*v/mx).toFixed(2);return`<div class="hbcol"><div class="hbbar" style="height:${h}px;background:${TC};opacity:${op};"></div><div class="hblbl">${lb}</div></div>`;}).join('');
+    const recentH=ratings.length===0?'<div style="font-size:13px;color:var(--text3);">No public ratings yet</div>':ratings.slice(0,10).map((r,i)=>{
+      let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';
+      const key='fp_'+i;_bookStore[key]={title:r.bookTitle,authors:[''],rating:r.rating,ratingCount:'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',isbn:r.bookId||'',previewLink:''};
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;" onclick="closeM('friendProfileMov');setTimeout(()=>_ob('${key}'),200);">${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(r.review)}</div>`:''}</div></div>`;
+    }).join('');
+    const c=avc(name.charCodeAt(0));
+    el.innerHTML=
+      `<div style="text-align:center;padding:10px 0 20px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:${c.bg};border:2px solid ${c.fg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:${c.fg};margin:0 auto 10px;">${ini(name)}</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px;">${esc(name)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Bookmarker member</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:10px 18px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text);">${ratings.length}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rated</div></div>
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:10px 18px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text);">${revCount}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Reviews</div></div>
+        </div>
+      </div>
+      <div style="border-top:0.5px solid var(--border);padding:14px 0;">
+        <div class="stitle" style="padding:0;margin-bottom:12px;">Their ratings</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;"><span style="font-size:16px;flex-shrink:0;margin-bottom:14px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:14px;font-size:14px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div>
+      </div>
+      <div style="border-top:0.5px solid var(--border);padding:14px 0;">
+        <div class="stitle" style="padding:0;margin-bottom:12px;">Recently rated</div>
+        ${recentH}
+      </div>`;
+  }catch(e){el.innerHTML='<div class="lmsg">Could not load profile</div>';}
 };
 
 // ── HOMEPAGE ──
@@ -808,9 +896,9 @@ async function loadHome(){
       const bsnap=await getDoc(doc(db,'books',bid(book)));
       let avg='',cnt=0;
       if(bsnap.exists()){const d=bsnap.data();avg=d.avgRating;cnt=d.ratingCount||0;}
-      const bd2=sj(book);
+      _bookStore['hero']=book;
       let stars='';for(let i=1;i<=5;i++){const f=Math.min(1,Math.max(0,(avg||0)-(i-1)));stars+=`<span style="color:var(--tc);opacity:${Math.max(0.2,f).toFixed(2)}">&#9733;</span>`;}
-      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick='openBook(${bd2})'><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(book.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">Top pick</div><div class="hero-title">${esc(book.title)}</div><div class="hero-author">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">No ratings yet &#8212; be first!</div>`}</div></div></div>`;
+      document.getElementById('heroWrap').innerHTML=`<div class="hero-card anim-fade-in" onclick="_ob('hero')"><img class="hero-img" src="${cover}" onerror="this.style.background='linear-gradient(145deg,#1a2a5a,#3a1a5a)';this.removeAttribute('src')" alt="${esc(book.title)}"><div class="hero-ov"></div><div class="hero-ct"><div class="hero-badge">Top pick</div><div class="hero-title">${esc(book.title)}</div><div class="hero-author">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div><div class="hero-stars"><div style="display:flex;gap:1px;">${stars}</div>${avg?`<div class="hero-avg">${avg}</div><div class="hero-cnt">${cnt.toLocaleString()} ratings</div>`:`<div style="font-size:12px;color:rgba(255,255,255,0.5);">No ratings yet &#8212; be first!</div>`}</div></div></div>`;
     }
   }catch(e){console.log(e);}
 
@@ -894,7 +982,8 @@ async function renderFriends(){
           const c=avc(fd.name.charCodeAt(0));
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
-          html+=`<div class="frbanner"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div></div></div></div>`;
+          _bookStore['friend_'+fid]={uid:fid,name:fd.name,ratingCount:rc.size,c};
+          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div></div></div>`;
         }catch(e){}
       }
     }
@@ -1023,4 +1112,3 @@ loadHome();
 </script>
 </body>
 </html>
-
