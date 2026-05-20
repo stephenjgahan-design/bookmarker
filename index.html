@@ -464,34 +464,201 @@ const GKEY='AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg';
 const NYTKEY='u3PbA4nCQUfhpXuf5tlnpru5CcUo15cUoEHC2RcT8draCIOo';
 
 // NYT list names per genre
-// NYT list slug for each genre (null = no dedicated NYT list, use Google only)
-const NYT_LISTS={
-  'crime thriller':'combined-print-and-e-book-fiction',
-  'science fiction':'combined-print-and-e-book-fiction',
-  'historical fiction':'combined-print-and-e-book-fiction',
-  'romance novel':'combined-print-and-e-book-fiction',
-  'horror fiction':'combined-print-and-e-book-fiction',
-  'literary fiction':'combined-print-and-e-book-fiction',
-};
-
-// Clean Google Books subject queries — one subject per genre, no OR tricks
-const GENRE_QUERIES={
-  'crime thriller':'subject:thriller',
-  'science fiction':'subject:science+fiction',
-  'historical fiction':'subject:historical+fiction',
-  'romance novel':'subject:romance',
-  'horror fiction':'subject:horror',
-  'literary fiction':'subject:literary+fiction',
-};
-
-// Genre keywords to filter Google results — keeps books on topic
-const GENRE_KEYWORDS={
-  'crime thriller':['thriller','crime','mystery','detective','suspense','murder'],
-  'science fiction':['science fiction','sci-fi','space','dystopia','future','alien','robot'],
-  'historical fiction':['historical','history','war','century','empire','medieval','ancient','tudor','roman','civil'],
-  'romance novel':['romance','love','relationship','heart','kiss','wedding'],
-  'horror fiction':['horror','ghost','haunted','terror','supernatural','evil','dark','fear','demon'],
-  'literary fiction':['literary','fiction','novel','life','family','identity','loss','human'],
+// Hardcoded top books per genre in ranked order
+// ISBNs looked up so covers load from Open Library
+const GENRE_BOOKS={
+  'crime thriller':[
+    {t:'And Then There Were None',a:'Agatha Christie',isbn:'9780062073488'},
+    {t:'The Da Vinci Code',a:'Dan Brown',isbn:'9780307474278'},
+    {t:'Gone Girl',a:'Gillian Flynn',isbn:'9780307588371'},
+    {t:'The Girl with the Dragon Tattoo',a:'Stieg Larsson',isbn:'9780307949486'},
+    {t:'Murder on the Orient Express',a:'Agatha Christie',isbn:'9780062693662'},
+    {t:'The Silence of the Lambs',a:'Thomas Harris',isbn:'9780312924584'},
+    {t:'In Cold Blood',a:'Truman Capote',isbn:'9780679745587'},
+    {t:'Big Little Lies',a:'Liane Moriarty',isbn:'9780425274866'},
+    {t:'The Secret History',a:'Donna Tartt',isbn:'9781400031702'},
+    {t:'The Talented Mr. Ripley',a:'Patricia Highsmith',isbn:'9780393332148'},
+    {t:'Before I Go to Sleep',a:'S.J. Watson',isbn:'9780062060556'},
+    {t:'Sharp Objects',a:'Gillian Flynn',isbn:'9780307341556'},
+    {t:'The Girl on the Train',a:'Paula Hawkins',isbn:'9781594634024'},
+    {t:'The Thursday Murder Club',a:'Richard Osman',isbn:'9781984880963'},
+    {t:'The Silent Patient',a:'Alex Michaelides',isbn:'9781250301697'},
+    {t:'The Dry',a:'Jane Harper',isbn:'9781250105615'},
+    {t:'Dark Places',a:'Gillian Flynn',isbn:'9780307341570'},
+    {t:'The Chestnut Man',a:'Søren Sveistrup',isbn:'9780062895639'},
+    {t:'Red Dragon',a:'Thomas Harris',isbn:'9780425228227'},
+    {t:'The Lovely Bones',a:'Alice Sebold',isbn:'9780316666343'},
+    {t:'Tinker Tailor Soldier Spy',a:'John le Carré',isbn:'9780143119784'},
+    {t:'The Name of the Rose',a:'Umberto Eco',isbn:'9780544176492'},
+    {t:'The Lincoln Lawyer',a:'Michael Connelly',isbn:'9780446618489'},
+    {t:'The Woman in Cabin 10',a:'Ruth Ware',isbn:'9781501156724'},
+    {t:'Rebecca',a:'Daphne du Maurier',isbn:'9780380730407'},
+    {t:'The Bone Collector',a:'Jeffery Deaver',isbn:'9780340953099'},
+    {t:'The Firm',a:'John Grisham',isbn:'9780440245926'},
+    {t:'A Time to Kill',a:'John Grisham',isbn:'9780440211952'},
+    {t:'The Black Dahlia',a:'James Ellroy',isbn:'9780446693196'},
+    {t:'Mystic River',a:'Dennis Lehane',isbn:'9780062068408'},
+  ],
+  'science fiction':[
+    {t:'1984',a:'George Orwell',isbn:'9780451524935'},
+    {t:'Dune',a:'Frank Herbert',isbn:'9780441013593'},
+    {t:'The Hitchhiker's Guide to the Galaxy',a:'Douglas Adams',isbn:'9780345391803'},
+    {t:'Fahrenheit 451',a:'Ray Bradbury',isbn:'9781451673319'},
+    {t:'Brave New World',a:'Aldous Huxley',isbn:'9780060850524'},
+    {t:'Foundation',a:'Isaac Asimov',isbn:'9780553293357'},
+    {t:'Ender's Game',a:'Orson Scott Card',isbn:'9780812550702'},
+    {t:'The Martian',a:'Andy Weir',isbn:'9780553418026'},
+    {t:'Ready Player One',a:'Ernest Cline',isbn:'9780307887436'},
+    {t:'The Handmaid's Tale',a:'Margaret Atwood',isbn:'9780385490818'},
+    {t:'The Three-Body Problem',a:'Liu Cixin',isbn:'9780765382030'},
+    {t:'Red Rising',a:'Pierce Brown',isbn:'9780345539786'},
+    {t:'Project Hail Mary',a:'Andy Weir',isbn:'9780593135204'},
+    {t:'Children of Time',a:'Adrian Tchaikovsky',isbn:'9781447273301'},
+    {t:'Leviathan Wakes',a:'James S.A. Corey',isbn:'9780316129084'},
+    {t:'Dark Matter',a:'Blake Crouch',isbn:'9781101904244'},
+    {t:'Recursion',a:'Blake Crouch',isbn:'9781524759780'},
+    {t:'The Hunger Games',a:'Suzanne Collins',isbn:'9780439023481'},
+    {t:'Annihilation',a:'Jeff VanderMeer',isbn:'9780374104092'},
+    {t:'Neuromancer',a:'William Gibson',isbn:'9780441569595'},
+    {t:'Snow Crash',a:'Neal Stephenson',isbn:'9780553380958'},
+    {t:'Do Androids Dream of Electric Sheep?',a:'Philip K. Dick',isbn:'9780345404473'},
+    {t:'Hyperion',a:'Dan Simmons',isbn:'9780553283686'},
+    {t:'The Fifth Season',a:'N.K. Jemisin',isbn:'9780316229296'},
+    {t:'The Long Way to a Small Angry Planet',a:'Becky Chambers',isbn:'9781473619814'},
+    {t:'Old Man's War',a:'John Scalzi',isbn:'9780765348272'},
+    {t:'The Forever War',a:'Joe Haldeman',isbn:'9780312536633'},
+    {t:'Jurassic Park',a:'Michael Crichton',isbn:'9780345370778'},
+    {t:'Contact',a:'Carl Sagan',isbn:'9780671434021'},
+    {t:'Childhood's End',a:'Arthur C. Clarke',isbn:'9780345444059'},
+  ],
+  'historical fiction':[
+    {t:'A Tale of Two Cities',a:'Charles Dickens',isbn:'9780141439600'},
+    {t:'The Book Thief',a:'Markus Zusak',isbn:'9780375842207'},
+    {t:'All the Light We Cannot See',a:'Anthony Doerr',isbn:'9781476746586'},
+    {t:'Wolf Hall',a:'Hilary Mantel',isbn:'9780312429980'},
+    {t:'Gone with the Wind',a:'Margaret Mitchell',isbn:'9781416548942'},
+    {t:'The Pillars of the Earth',a:'Ken Follett',isbn:'9780451166890'},
+    {t:'The Nightingale',a:'Kristin Hannah',isbn:'9780312577223'},
+    {t:'Memoirs of a Geisha',a:'Arthur Golden',isbn:'9780679781585'},
+    {t:'The Tattooist of Auschwitz',a:'Heather Morris',isbn:'9780062797155'},
+    {t:'The Kite Runner',a:'Khaled Hosseini',isbn:'9781594631931'},
+    {t:'Pachinko',a:'Min Jin Lee',isbn:'9781455563920'},
+    {t:'A Gentleman in Moscow',a:'Amor Towles',isbn:'9780670026197'},
+    {t:'Hamnet',a:'Maggie O'Farrell',isbn:'9780525657606'},
+    {t:'The Four Winds',a:'Kristin Hannah',isbn:'9781250178602'},
+    {t:'The Underground Railroad',a:'Colson Whitehead',isbn:'9780385542364'},
+    {t:'Beloved',a:'Toni Morrison',isbn:'9781400033416'},
+    {t:'The English Patient',a:'Michael Ondaatje',isbn:'9780679745204'},
+    {t:'Shōgun',a:'James Clavell',isbn:'9780440178002'},
+    {t:'The Help',a:'Kathryn Stockett',isbn:'9780399155345'},
+    {t:'Beneath a Scarlet Sky',a:'Mark Sullivan',isbn:'9781503943377'},
+    {t:'Cold Mountain',a:'Charles Frazier',isbn:'9780802143587'},
+    {t:'The Other Boleyn Girl',a:'Philippa Gregory',isbn:'9780743227445'},
+    {t:'Salt to the Sea',a:'Ruta Sepetys',isbn:'9780142422426'},
+    {t:'The Alice Network',a:'Kate Quinn',isbn:'9780062654199'},
+    {t:'Birdsong',a:'Sebastian Faulks',isbn:'9780099468639'},
+    {t:'The Shadow of the Wind',a:'Carlos Ruiz Zafón',isbn:'9780143034902'},
+    {t:'The Last Kingdom',a:'Bernard Cornwell',isbn:'9780060530969'},
+    {t:'Code Name Verity',a:'Elizabeth Wein',isbn:'9781423152194'},
+    {t:'The Rose Code',a:'Kate Quinn',isbn:'9780063060128'},
+    {t:'Alias Grace',a:'Margaret Atwood',isbn:'9780385490443'},
+  ],
+  'romance novel':[
+    {t:'Pride and Prejudice',a:'Jane Austen',isbn:'9780141439518'},
+    {t:'The Notebook',a:'Nicholas Sparks',isbn:'9780446676090'},
+    {t:'Me Before You',a:'Jojo Moyes',isbn:'9780143124542'},
+    {t:'Outlander',a:'Diana Gabaldon',isbn:'9780440212560'},
+    {t:'Jane Eyre',a:'Charlotte Brontë',isbn:'9780141441146'},
+    {t:'It Ends with Us',a:'Colleen Hoover',isbn:'9781501110368'},
+    {t:'Normal People',a:'Sally Rooney',isbn:'9780571334650'},
+    {t:'The Time Traveler's Wife',a:'Audrey Niffenegger',isbn:'9780156029438'},
+    {t:'Beach Read',a:'Emily Henry',isbn:'9781984806734'},
+    {t:'People We Meet on Vacation',a:'Emily Henry',isbn:'9781984806758'},
+    {t:'Book Lovers',a:'Emily Henry',isbn:'9781984806772'},
+    {t:'The Fault in Our Stars',a:'John Green',isbn:'9780525478812'},
+    {t:'Eleanor & Park',a:'Rainbow Rowell',isbn:'9781250012579'},
+    {t:'Ugly Love',a:'Colleen Hoover',isbn:'9781476750552'},
+    {t:'Reminders of Him',a:'Colleen Hoover',isbn:'9781542021937'},
+    {t:'The Hating Game',a:'Sally Thorne',isbn:'9780062439079'},
+    {t:'Red White & Royal Blue',a:'Casey McQuiston',isbn:'9781250316776'},
+    {t:'Happy Place',a:'Emily Henry',isbn:'9781984806784'},
+    {t:'The Spanish Love Deception',a:'Elena Armas',isbn:'9781982177171'},
+    {t:'A Court of Thorns and Roses',a:'Sarah J. Maas',isbn:'9781619634442'},
+    {t:'The Love Hypothesis',a:'Ali Hazelwood',isbn:'9780593336823'},
+    {t:'The Seven Husbands of Evelyn Hugo',a:'Taylor Jenkins Reid',isbn:'9781501161933'},
+    {t:'Verity',a:'Colleen Hoover',isbn:'9781538724736'},
+    {t:'The Kiss Quotient',a:'Helen Hoang',isbn:'9780451490803'},
+    {t:'From Blood and Ash',a:'Jennifer L. Armentrout',isbn:'9781952457227'},
+    {t:'The Duke and I',a:'Julia Quinn',isbn:'9780062353405'},
+    {t:'Sense and Sensibility',a:'Jane Austen',isbn:'9780141439662'},
+    {t:'The Rosie Project',a:'Graeme Simsion',isbn:'9781476729091'},
+    {t:'November 9',a:'Colleen Hoover',isbn:'9781501110344'},
+    {t:'Funny Story',a:'Emily Henry',isbn:'9781984806802'},
+  ],
+  'horror fiction':[
+    {t:'It',a:'Stephen King',isbn:'9781501175466'},
+    {t:'The Shining',a:'Stephen King',isbn:'9780307743657'},
+    {t:'Dracula',a:'Bram Stoker',isbn:'9780141439846'},
+    {t:'Frankenstein',a:'Mary Shelley',isbn:'9780486282114'},
+    {t:'Pet Sematary',a:'Stephen King',isbn:'9780743412384'},
+    {t:'Bird Box',a:'Josh Malerman',isbn:'9780062259653'},
+    {t:'The Haunting of Hill House',a:'Shirley Jackson',isbn:'9780143039983'},
+    {t:'Mexican Gothic',a:'Silvia Moreno-Garcia',isbn:'9780525620785'},
+    {t:'Carrie',a:'Stephen King',isbn:'9780307743664'},
+    {t:'Misery',a:'Stephen King',isbn:'9780451169525'},
+    {t:'Coraline',a:'Neil Gaiman',isbn:'9780380807345'},
+    {t:'The Stand',a:'Stephen King',isbn:'9780307743671'},
+    {t:'House of Leaves',a:'Mark Z. Danielewski',isbn:'9780375703768'},
+    {t:'World War Z',a:'Max Brooks',isbn:'9780307346605'},
+    {t:'NOS4A2',a:'Joe Hill',isbn:'9780062200570'},
+    {t:'Tender Is the Flesh',a:'Agustina Bazterrica',isbn:'9781982150716'},
+    {t:'American Psycho',a:'Bret Easton Ellis',isbn:'9780679735779'},
+    {t:'Interview with the Vampire',a:'Anne Rice',isbn:'9780345409647'},
+    {t:'The Cabin at the End of the World',a:'Paul Tremblay',isbn:'9780062679109'},
+    {t:'The Only Good Indians',a:'Stephen Graham Jones',isbn:'9781982136451'},
+    {t:'Let the Right One In',a:'John Ajvide Lindqvist',isbn:'9780312355289'},
+    {t:'Salem's Lot',a:'Stephen King',isbn:'9780307743695'},
+    {t:'Doctor Sleep',a:'Stephen King',isbn:'9781476727653'},
+    {t:'The Exorcist',a:'William Peter Blatty',isbn:'9780061007224'},
+    {t:'Something Wicked This Way Comes',a:'Ray Bradbury',isbn:'9780380729401'},
+    {t:'Heart-Shaped Box',a:'Joe Hill',isbn:'9780061147951'},
+    {t:'The Troop',a:'Nick Cutter',isbn:'9781476703442'},
+    {t:'The Ritual',a:'Adam Nevill',isbn:'9781250031372'},
+    {t:'The Whisper Man',a:'Alex North',isbn:'9781984803832'},
+    {t:'A Head Full of Ghosts',a:'Paul Tremblay',isbn:'9780062363237'},
+  ],
+  'literary fiction':[
+    {t:'To Kill a Mockingbird',a:'Harper Lee',isbn:'9780061935466'},
+    {t:'The Great Gatsby',a:'F. Scott Fitzgerald',isbn:'9780743273565'},
+    {t:'One Hundred Years of Solitude',a:'Gabriel García Márquez',isbn:'9780060883287'},
+    {t:'The Catcher in the Rye',a:'J.D. Salinger',isbn:'9780316769174'},
+    {t:'Beloved',a:'Toni Morrison',isbn:'9781400033416'},
+    {t:'Normal People',a:'Sally Rooney',isbn:'9780571334650'},
+    {t:'A Little Life',a:'Hanya Yanagihara',isbn:'9780804172707'},
+    {t:'The Road',a:'Cormac McCarthy',isbn:'9780307387899'},
+    {t:'Conversations with Friends',a:'Sally Rooney',isbn:'9780571333134'},
+    {t:'Beautiful World, Where Are You',a:'Sally Rooney',isbn:'9780374602604'},
+    {t:'Tomorrow and Tomorrow and Tomorrow',a:'Gabrielle Zevin',isbn:'9780593321201'},
+    {t:'Demon Copperhead',a:'Barbara Kingsolver',isbn:'9780063251922'},
+    {t:'The Remains of the Day',a:'Kazuo Ishiguro',isbn:'9780679731726'},
+    {t:'Never Let Me Go',a:'Kazuo Ishiguro',isbn:'9781400078776'},
+    {t:'Intermezzo',a:'Sally Rooney',isbn:'9780374610364'},
+    {t:'Orbital',a:'Samantha Harvey',isbn:'9780802163714'},
+    {t:'James',a:'Percival Everett',isbn:'9780385550369'},
+    {t:'The Covenant of Water',a:'Abraham Verghese',isbn:'9780802162175'},
+    {t:'Fourth Wing',a:'Rebecca Yarros',isbn:'9781649374042'},
+    {t:'The Midnight Library',a:'Matt Haig',isbn:'9780525559474'},
+    {t:'Lessons in Chemistry',a:'Bonnie Garmus',isbn:'9780385547345'},
+    {t:'Where the Crawdads Sing',a:'Delia Owens',isbn:'9780735224292'},
+    {t:'The Alchemist',a:'Paulo Coelho',isbn:'9780062315007'},
+    {t:'Life of Pi',a:'Yann Martel',isbn:'9780156027328'},
+    {t:'The Kite Runner',a:'Khaled Hosseini',isbn:'9781594631931'},
+    {t:'A Gentleman in Moscow',a:'Amor Towles',isbn:'9780670026197'},
+    {t:'The House in the Cerulean Sea',a:'TJ Klune',isbn:'9781250217288'},
+    {t:'Cloud Atlas',a:'David Mitchell',isbn:'9780375507250'},
+    {t:'Lincoln in the Bardo',a:'George Saunders',isbn:'9780812988079'},
+    {t:'The Sympathizer',a:'Viet Thanh Nguyen',isbn:'9780802123459'},
+  ],
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
@@ -802,103 +969,53 @@ window._qwl=key=>{const b=_bookStore[key];if(b)qWL(b);};
 // ── GENRE ──
 // Render a list of NYT books into the home grid
 // Render books into the home grid with NYT rank badge and Bookmarker rating pill
-function renderGenreBooks(books){
+// Render genre books from hardcoded list — covers via Open Library, Bookmarker ratings loaded live
+function renderGenreBooks(genreKey){
+  const list=GENRE_BOOKS[genreKey]||[];
   const g=document.getElementById('homeGrid');
-  if(!books.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
+  if(!list.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No books found</div>';return;}
+  const show=list.slice(0,9);
   const ts=Date.now();
-  g.innerHTML=books.map((b,i)=>{
-    const key='g'+i+'_'+ts;_bookStore[key]=b;
-    const ch=b.cover
-      ?`<img class="gcov" src="${b.cover}" onerror="this.style.background='${grad(b.title)}';this.removeAttribute('src')" loading="lazy" alt="${esc(b.title)}">`
-      :`<div class="gcov" style="background:${grad(b.title)};"></div>`;
-    // NYT rank badge — teal for #1, dark for #2-3
-    const rankBadge=b.nytRank===1
-      ?'<div style="position:absolute;top:5px;left:5px;background:var(--tc);color:var(--tc-dark);font-size:9px;font-weight:800;border-radius:6px;padding:2px 7px;">#1 NYT</div>'
-      :b.nytRank>1&&b.nytRank<=5
-        ?`<div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#${b.nytRank} NYT</div>`
-        :'';
-    // Only show rating pill if Bookmarker users have rated it — starts hidden, filled in below
-    const ratingPill=`<div id="rp_${key}" style="position:absolute;bottom:5px;right:5px;display:none;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;"></div>`;
+  g.innerHTML=show.map((b,i)=>{
+    // Build full book object for openBook
+    const book={title:b.t,authors:[b.a],author:b.a,isbn:b.isbn,cover:olc(b.isbn,'M'),description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+    const key='g'+i+'_'+ts;_bookStore[key]=book;
+    // Rank badge — show position in our curated list
+    const rank=i===0
+      ?'<div style="position:absolute;top:5px;left:5px;background:var(--tc);color:var(--tc-dark);font-size:9px;font-weight:800;border-radius:6px;padding:2px 7px;">#1</div>'
+      :i<3?`<div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.68);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#${i+1}</div>`:'';
+    // Rating pill — hidden until Bookmarker data loads
+    const pill=`<div id="rp_${key}" style="position:absolute;bottom:5px;right:5px;display:none;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;"></div>`;
     return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')">
-      <div style="position:relative;">${ch}${rankBadge}${ratingPill}</div>
-      <div class="gtitle">${esc(b.title)}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc(b.author||'')}</div>
+      <div style="position:relative;">
+        <img class="gcov" src="${olc(b.isbn,'M')}" onerror="this.style.background='${grad(b.t)}';this.removeAttribute('src')" loading="lazy" alt="${esc(b.t)}">
+        ${rank}${pill}
+      </div>
+      <div class="gtitle">${esc(b.t)}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc(b.a)}</div>
     </div>`;
   }).join('');
-  // Load real Bookmarker ratings in background — overwrite pill in teal if rated
-  books.forEach((b,i)=>{
+  // Load real Bookmarker ratings silently in background
+  show.forEach((b,i)=>{
     if(!b.isbn)return;
     getDoc(doc(db,'books',b.isbn)).then(bs=>{
       if(bs.exists()&&bs.data().ratingCount>0){
         const d=bs.data();
         const pill=document.getElementById('rp_g'+i+'_'+ts);
-        if(pill){pill.innerHTML='&#9733; '+d.avgRating;pill.style.cssText='position:absolute;bottom:5px;right:5px;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;display:block;';}
+        if(pill){pill.textContent='★ '+d.avgRating;pill.style.display='block';}
       }
     }).catch(()=>{});
   });
 }
 
-window.loadGenre=async(q,tabEl)=>{
+window.loadGenre=(q,tabEl)=>{
   document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('on'));
   if(tabEl)tabEl.classList.add('on');
   const label=document.getElementById('gridLabel');
-  if(label)label.textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
-  const g=document.getElementById('homeGrid');
-  g.innerHTML=Array(6).fill(0).map(()=>`<div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>`).join('');
-
-  // Step 1: Fetch Google Books for this genre (accurate category results)
-  const gq=GENRE_QUERIES[q]||('subject:'+q);
-  const keywords=(GENRE_KEYWORDS[q]||[]).map(k=>k.toLowerCase());
-
-  let googleBooks=[];
-  try{
-    const gr=await fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(gq)}&maxResults=30&orderBy=relevance&langRestrict=en&printType=books`);
-    const gd=await gr.json();
-    let items=gd.items||[];
-    // Keep only books with covers
-    items=items.filter(it=>(it.volumeInfo||{}).imageLinks);
-    // Filter by genre keywords in title/categories/description to stay on topic
-    if(keywords.length){
-      items=items.filter(it=>{
-        const v=it.volumeInfo||{};
-        const txt=((v.title||'')+' '+(v.categories||[]).join(' ')+' '+(v.description||'')).toLowerCase();
-        return keywords.some(k=>txt.includes(k));
-      });
-    }
-    // Sort by Google ratingsCount — most popular first
-    items.sort((a,b)=>((b.volumeInfo||{}).ratingsCount||0)-((a.volumeInfo||{}).ratingsCount||0));
-    googleBooks=items.slice(0,15).map(it=>{
-      const v=it.volumeInfo||{};
-      const isbn=(v.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
-      let cover=isbn?olc(isbn.identifier,'M'):'';
-      if(!cover&&v.imageLinks)cover=(v.imageLinks.thumbnail||'').replace('http:','https:');
-      return{title:v.title||'',author:(v.authors||[''])[0],authors:v.authors||[],isbn:isbn?isbn.identifier:'',cover,description:(v.description||'').substring(0,500),categories:v.categories||[],publishedDate:(v.publishedDate||'').substring(0,4),previewLink:v.previewLink||'',nytRank:0};
-    });
-  }catch(e){console.log('Google Books error',e);}
-
-  // Step 2: Fetch NYT hardcover fiction list and note which books appear on it
-  try{
-    const nr=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/combined-print-and-e-book-fiction.json?api-key=${NYTKEY}`);
-    const nd=await nr.json();
-    const nytBooks=(nd.results&&nd.results.books)||[];
-    // Build a lookup: ISBN -> NYT rank
-    const nytByISBN={};
-    nytBooks.forEach(b=>{
-      if(b.primary_isbn13)nytByISBN[b.primary_isbn13]=b.list_rank;
-      if(b.primary_isbn10)nytByISBN[b.primary_isbn10]=b.list_rank;
-    });
-    // Tag each Google book with its NYT rank if it appears on the list
-    googleBooks.forEach(b=>{if(b.isbn&&nytByISBN[b.isbn])b.nytRank=nytByISBN[b.isbn];});
-    // Sort: NYT-ranked books first (by rank), then the rest by Google popularity
-    googleBooks.sort((a,b)=>{
-      if(a.nytRank&&b.nytRank)return a.nytRank-b.nytRank; // both on NYT: sort by rank
-      if(a.nytRank)return -1; // a is on NYT, b is not: a comes first
-      if(b.nytRank)return 1;  // b is on NYT, a is not: b comes first
-      return 0; // neither on NYT: keep Google order
-    });
-  }catch(e){console.log('NYT lookup failed, using Google order only',e);}
-
-  renderGenreBooks(googleBooks.slice(0,9));
+  // Clean label names
+  const labels={'crime thriller':'Crime & Thriller','science fiction':'Science Fiction','historical fiction':'Historical Fiction','romance novel':'Romance','horror fiction':'Horror','literary fiction':'Literary Fiction'};
+  if(label)label.textContent=labels[q]||q;
+  renderGenreBooks(q);
 };
 
 // ── FRIEND PROFILE ──
@@ -1177,4 +1294,3 @@ loadHome();
 </script>
 </body>
 </html>
-
