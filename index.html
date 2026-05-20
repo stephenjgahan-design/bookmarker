@@ -465,23 +465,34 @@ const GKEY='AIzaSyDCLL1TPxXf0ssvt26khwzR9m2fjw2c5pg';
 const NYTKEY='u3PbA4nCQUfhpXuf5tlnpru5CcUo15cUoEHC2RcT8draCIOo';
 
 // NYT list names per genre
+// NYT list slug for each genre (null = no dedicated NYT list, use Google only)
 const NYT_LISTS={
-  'crime thriller':null,
-  'science fiction':null,
-  'historical fiction':'hardcover-fiction',
-  'romance novel':null,
-  'horror fiction':null,
+  'crime thriller':'combined-print-and-e-book-fiction',
+  'science fiction':'combined-print-and-e-book-fiction',
+  'historical fiction':'combined-print-and-e-book-fiction',
+  'romance novel':'combined-print-and-e-book-fiction',
+  'horror fiction':'combined-print-and-e-book-fiction',
   'literary fiction':'combined-print-and-e-book-fiction',
 };
 
-// Curated popular author searches per genre (fallback when no NYT list)
+// Clean Google Books subject queries — one subject per genre, no OR tricks
 const GENRE_QUERIES={
-  'crime thriller':'intitle:thriller+inauthor:james+OR+inauthor:Patterson+OR+inauthor:Connelly+OR+inauthor:Child',
-  'science fiction':'intitle:sci-fi+inauthor:Sanderson+OR+inauthor:Weir+OR+inauthor:Pierce+Brown+OR+inauthor:Scalzi',
-  'romance novel':'inauthor:Colleen+Hoover+OR+inauthor:Emily+Henry+OR+inauthor:Helen+Hoang+OR+inauthor:Ali+Hazelwood',
-  'horror fiction':'inauthor:Stephen+King+OR+inauthor:Paul+Tremblay+OR+inauthor:Grady+Hendrix+OR+inauthor:Joe+Hill',
-  'historical fiction':'subject:historical+fiction+inauthor:Hilary+Mantel+OR+inauthor:Ken+Follett+OR+inauthor:Anthony+Burgess',
-  'literary fiction':'subject:literary+fiction+inauthor:Sally+Rooney+OR+inauthor:Colson+Whitehead+OR+inauthor:Kazuo+Ishiguro',
+  'crime thriller':'subject:thriller',
+  'science fiction':'subject:science+fiction',
+  'historical fiction':'subject:historical+fiction',
+  'romance novel':'subject:romance',
+  'horror fiction':'subject:horror',
+  'literary fiction':'subject:literary+fiction',
+};
+
+// Genre keywords to filter Google results — keeps books on topic
+const GENRE_KEYWORDS={
+  'crime thriller':['thriller','crime','mystery','detective','suspense','murder'],
+  'science fiction':['science fiction','sci-fi','space','dystopia','future','alien','robot'],
+  'historical fiction':['historical','history','war','century','empire','medieval','ancient','tudor','roman','civil'],
+  'romance novel':['romance','love','relationship','heart','kiss','wedding'],
+  'horror fiction':['horror','ghost','haunted','terror','supernatural','evil','dark','fear','demon'],
+  'literary fiction':['literary','fiction','novel','life','family','identity','loss','human'],
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
@@ -791,27 +802,40 @@ window._qwl=key=>{const b=_bookStore[key];if(b)qWL(b);};
 
 // ── GENRE ──
 // Render a list of NYT books into the home grid
-function renderNYTBooks(nytBooks){
+// Render books into the home grid with NYT rank badge and Bookmarker rating pill
+function renderGenreBooks(books){
   const g=document.getElementById('homeGrid');
-  if(!nytBooks.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results</div>';return;}
-  g.innerHTML=nytBooks.map((b,i)=>{
-    const cover=b.book_image||olc(b.primary_isbn13,'M');
-    const book={title:b.title,authors:[b.author],rating:0,ratingCount:'',cover,description:b.description||'',categories:[],publishedDate:'',isbn:b.primary_isbn13||'',previewLink:''};
-    const key='nyt'+i+'_'+Date.now();_bookStore[key]=book;
-    const ch=`<img class="gcov" src="${cover}" onerror="this.src='${olc(b.primary_isbn13,'M')}';this.onerror=null;" loading="lazy" alt="${esc(b.title)}">`;
-    const rank=i===0?'<div style="position:absolute;top:6px;left:6px;background:var(--tc);color:var(--tc-dark);font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#1</div>':i<3?`<div style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#${i+1}</div>`:'';
-    return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}${rank}<div id="bmr_${key}" style="position:absolute;bottom:6px;right:5px;display:none;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;"></div></div><div class="gtitle">${esc(b.title)}</div><div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc(b.author)}</div></div>`;
+  if(!books.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
+  const ts=Date.now();
+  g.innerHTML=books.map((b,i)=>{
+    const key='g'+i+'_'+ts;_bookStore[key]=b;
+    const ch=b.cover
+      ?`<img class="gcov" src="${b.cover}" onerror="this.style.background='${grad(b.title)}';this.removeAttribute('src')" loading="lazy" alt="${esc(b.title)}">`
+      :`<div class="gcov" style="background:${grad(b.title)};"></div>`;
+    // NYT rank badge — teal for #1, dark for #2-3
+    const rankBadge=b.nytRank===1
+      ?'<div style="position:absolute;top:5px;left:5px;background:var(--tc);color:var(--tc-dark);font-size:9px;font-weight:800;border-radius:6px;padding:2px 7px;">#1 NYT</div>'
+      :b.nytRank>1&&b.nytRank<=5
+        ?`<div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">#${b.nytRank} NYT</div>`
+        :'';
+    // Rating pill — shown if Google has a rating; overwritten by Bookmarker if available
+    const ratingPill=b.googleRating
+      ?`<div id="rp_${key}" style="position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#e8c84a;">&#9733; ${b.googleRating}</div>`
+      :`<div id="rp_${key}" style="position:absolute;bottom:5px;right:5px;display:none;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;"></div>`;
+    return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')">
+      <div style="position:relative;">${ch}${rankBadge}${ratingPill}</div>
+      <div class="gtitle">${esc(b.title)}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc(b.author||'')}</div>
+    </div>`;
   }).join('');
-  // Load real Bookmarker ratings in background
-  nytBooks.forEach((b,i)=>{
-    if(!b.primary_isbn13)return;
-    const key='nyt'+i+'_';
-    getDoc(doc(db,'books',b.primary_isbn13)).then(bs=>{
+  // Load real Bookmarker ratings in background — overwrite pill in teal if rated
+  books.forEach((b,i)=>{
+    if(!b.isbn)return;
+    getDoc(doc(db,'books',b.isbn)).then(bs=>{
       if(bs.exists()&&bs.data().ratingCount>0){
         const d=bs.data();
-        // Find the pill by partial key match
-        const pill=document.querySelector(`[id^="bmr_nyt${i}_"]`);
-        if(pill){pill.textContent='★ '+d.avgRating;pill.style.display='block';}
+        const pill=document.getElementById('rp_g'+i+'_'+ts);
+        if(pill){pill.innerHTML='&#9733; '+d.avgRating;pill.style.cssText='position:absolute;bottom:5px;right:5px;background:rgba(93,202,165,0.92);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#0a2a20;display:block;';}
       }
     }).catch(()=>{});
   });
@@ -824,37 +848,60 @@ window.loadGenre=async(q,tabEl)=>{
   if(label)label.textContent=q.charAt(0).toUpperCase()+q.slice(1)+' books';
   const g=document.getElementById('homeGrid');
   g.innerHTML=Array(6).fill(0).map(()=>`<div class="gi"><div class="skel skel-cover"></div><div class="skel skel-line"></div></div>`).join('');
-  // Try NYT first
-  const nytList=NYT_LISTS[q]||'hardcover-fiction';
-  try{
-    const r=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/${nytList}.json?api-key=${NYTKEY}`);
-    const d=await r.json();
-    const books=(d.results&&d.results.books)||[];
-    if(books.length){renderNYTBooks(books);return;}
-  }catch(e){console.log('NYT failed, falling back to Google',e);}
-  // Fallback: use curated genre query for accurate results
+
+  // Step 1: Fetch Google Books for this genre (accurate category results)
   const gq=GENRE_QUERIES[q]||('subject:'+q);
-  fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(gq)}&maxResults=20&orderBy=relevance&langRestrict=en&printType=books`)
-    .then(r=>r.json()).then(d=>{
-      let items=d.items||[];
-      // Sort by ratingsCount so most-read books appear first
-      items.sort((a,b)=>((b.volumeInfo||{}).ratingsCount||0)-((a.volumeInfo||{}).ratingsCount||0));
-      // Filter to only books with covers
-      items=items.filter(it=>(it.volumeInfo||{}).imageLinks);
-      items=items.slice(0,9);
-      if(!items.length){g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">No results found</div>';return;}
-      g.innerHTML=items.map((item,i)=>{
-        const info=item.volumeInfo||{};
-        const isbn=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
-        let cover=isbn?olc(isbn.identifier,'M'):'';
-        if(!cover&&info.imageLinks)cover=(info.imageLinks.thumbnail||'').replace('http:','https:');
-        const book={title:info.title||'Unknown',authors:info.authors||['Unknown'],rating:0,ratingCount:'',cover,description:(info.description||'').substring(0,500),categories:info.categories||[],publishedDate:(info.publishedDate||'').substring(0,4),isbn:isbn?isbn.identifier:'',previewLink:info.previewLink||''};
-        const key='g'+i+'_'+Date.now();_bookStore[key]=book;
-        const ch=cover?`<img class="gcov" src="${cover}" onerror="this.style.background='${grad(book.title)}';this.src=''" loading="lazy" alt="${esc(book.title)}">`:`<div class="gcov" style="background:${grad(book.title)};"></div>`;
-        const avgPill=info.averageRating?`<div style="position:absolute;bottom:6px;right:5px;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:#e8c84a;">&#9733; ${info.averageRating}</div>`:'';
-        return`<div class="gi anim-fade-up" style="animation-delay:${i*0.04}s;" onclick="_ob('${key}')"><div style="position:relative;">${ch}${avgPill}</div><div class="gtitle">${esc(book.title)}</div><div style="font-size:10px;color:var(--text3);margin-top:1px;">${esc((info.authors||[''])[0])}</div></div>`;
-      }).join('');
-    }).catch(()=>{g.innerHTML='<div style="grid-column:1/-1;" class="lmsg">Could not load — check connection</div>';});
+  const keywords=(GENRE_KEYWORDS[q]||[]).map(k=>k.toLowerCase());
+
+  let googleBooks=[];
+  try{
+    const gr=await fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(gq)}&maxResults=30&orderBy=relevance&langRestrict=en&printType=books`);
+    const gd=await gr.json();
+    let items=gd.items||[];
+    // Keep only books with covers
+    items=items.filter(it=>(it.volumeInfo||{}).imageLinks);
+    // Filter by genre keywords in title/categories/description to stay on topic
+    if(keywords.length){
+      items=items.filter(it=>{
+        const v=it.volumeInfo||{};
+        const txt=((v.title||'')+' '+(v.categories||[]).join(' ')+' '+(v.description||'')).toLowerCase();
+        return keywords.some(k=>txt.includes(k));
+      });
+    }
+    // Sort by Google ratingsCount — most popular first
+    items.sort((a,b)=>((b.volumeInfo||{}).ratingsCount||0)-((a.volumeInfo||{}).ratingsCount||0));
+    googleBooks=items.slice(0,15).map(it=>{
+      const v=it.volumeInfo||{};
+      const isbn=(v.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+      let cover=isbn?olc(isbn.identifier,'M'):'';
+      if(!cover&&v.imageLinks)cover=(v.imageLinks.thumbnail||'').replace('http:','https:');
+      return{title:v.title||'',author:(v.authors||[''])[0],authors:v.authors||[],isbn:isbn?isbn.identifier:'',cover,description:(v.description||'').substring(0,500),categories:v.categories||[],publishedDate:(v.publishedDate||'').substring(0,4),previewLink:v.previewLink||'',googleRating:v.averageRating||null,nytRank:0};
+    });
+  }catch(e){console.log('Google Books error',e);}
+
+  // Step 2: Fetch NYT hardcover fiction list and note which books appear on it
+  try{
+    const nr=await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/combined-print-and-e-book-fiction.json?api-key=${NYTKEY}`);
+    const nd=await nr.json();
+    const nytBooks=(nd.results&&nd.results.books)||[];
+    // Build a lookup: ISBN -> NYT rank
+    const nytByISBN={};
+    nytBooks.forEach(b=>{
+      if(b.primary_isbn13)nytByISBN[b.primary_isbn13]=b.list_rank;
+      if(b.primary_isbn10)nytByISBN[b.primary_isbn10]=b.list_rank;
+    });
+    // Tag each Google book with its NYT rank if it appears on the list
+    googleBooks.forEach(b=>{if(b.isbn&&nytByISBN[b.isbn])b.nytRank=nytByISBN[b.isbn];});
+    // Sort: NYT-ranked books first (by rank), then the rest by Google popularity
+    googleBooks.sort((a,b)=>{
+      if(a.nytRank&&b.nytRank)return a.nytRank-b.nytRank; // both on NYT: sort by rank
+      if(a.nytRank)return -1; // a is on NYT, b is not: a comes first
+      if(b.nytRank)return 1;  // b is on NYT, a is not: b comes first
+      return 0; // neither on NYT: keep Google order
+    });
+  }catch(e){console.log('NYT lookup failed, using Google order only',e);}
+
+  renderGenreBooks(googleBooks.slice(0,9));
 };
 
 // ── FRIEND PROFILE ──
