@@ -535,7 +535,7 @@ img{display:block;}
 
 <!-- THEME PAGE -->
 <div class="screen" id="S-theme">
-  <div class="backbar"><div class="backleft" onclick="goBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Back</span></div></div>
+  <div class="backbar"><div class="backleft" onclick="themeBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Back</span></div></div>
   <div class="sa" id="themeContent" style="padding-bottom:30px;"></div>
 </div>
 
@@ -963,7 +963,7 @@ const GENRE_BOOKS={
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
-let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[],recDismissed=new Set();
+let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[],recDismissed=new Set(),_backStack=[];
 // Restore saved theme + mode on first load
 (function(){
   try{
@@ -1782,7 +1782,7 @@ async function renderFriends(){
         });
         html+='</div>';
       }
-      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(myName)} ${tierBadgeHtml(myAllRatings.size,18)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div>${myT5Html}</div></div></div>`;
+      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(myName)} ${tierBadgeHtml(myAllRatings.size,22)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div>${myT5Html}</div></div></div>`;
     }catch(e){}
 
     // Pending requests section
@@ -1818,7 +1818,7 @@ async function renderFriends(){
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
           _bookStore['friend_'+fid]={uid:fid,name:fd.name,ratingCount:rc.size,c};
-          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div style="flex:1;min-width:0;"><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(fd.name)} ${tierBadgeHtml(rc.size,18)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><button onclick="event.stopPropagation();openPickBookForFriend('${fid}','${esc(fd.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128172; Recommend</button><div style="font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div>${friendT5Html}</div></div>`;
+          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div style="flex:1;min-width:0;"><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(fd.name)} ${tierBadgeHtml(rc.size,22)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><button onclick="event.stopPropagation();openPickBookForFriend('${fid}','${esc(fd.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128172; Recommend</button><div style="font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div>${friendT5Html}</div></div>`;
         }catch(e){}
       }
     }
@@ -1904,16 +1904,52 @@ async function renderProfile(){
   const hd=Array(10).fill(0);myR.forEach(r=>{const i=Math.round(r.rating*2)-1;if(i>=0&&i<10)hd[i]++;});
   const mx=Math.max(...hd)||1;
   const histH=hd.map((v,i)=>{const h=Math.max(4,Math.round(v/mx*60));const lb=((i+1)*0.5).toFixed(1).replace('.0','');const op=(0.25+0.75*v/mx).toFixed(2);return`<div class="hbcol"><div class="hbbar" style="height:${h}px;background:${TC};opacity:${op};"></div><div class="hblbl">${lb}</div></div>`;}).join('');
-  // Achievements
-  const achs=[
-    {ic:'&#127381;',n:'First rating',d:'You rated your first book',c:'rc',l:'Common',ok:myR.length>=1},
-    {ic:'&#9997;&#65039;',n:'Wrote a review',d:'You wrote your first review',c:'rc',l:'Common',ok:revC>=1},
-    {ic:'&#128278;',n:'First wishlist',d:'Added a book to your wishlist',c:'rc',l:'Common',ok:wl.length>=1},
-    {ic:'&#11088;',n:'Rated 10 books',d:'10 or more books rated',c:'ru',l:'Uncommon',ok:myR.length>=10},
-    {ic:'&#128218;',n:'Rated 50 books',d:'50 or more books rated',c:'rr',l:'Rare',ok:myR.length>=50},
-    {ic:'&#127942;',n:'100 books',d:'100 or more books rated',c:'rl',l:'Legendary',ok:myR.length>=100},
-  ];
-  const achH=achs.map(a=>`<div class="achcard${a.ok?'':' locked'}" onclick="openAch('${a.ic}','${a.n}','${a.d}','${a.c}','${a.l}')"><div class="achcard-icon">${a.ic}</div><div class="achcard-name">${a.n}</div><span class="rarity ${a.c}">${a.l}</span></div>`).join('');
+  // Build TIER LADDER with progress bar
+  const curTier=getTier(myR.length);
+  const tierDescs={
+    bronze:'You\'re just starting your library — every great reader begins here.',
+    silver:'You\'ve built a real reading habit. Welcome to the second shelf.',
+    gold:'A serious reader. You\'ve seen more books than most ever will.',
+    diamond:'You read at an elite level. Your taste shapes others.',
+    platinum:'The top tier. A lifetime of books, all logged here.',
+  };
+  // Find next tier
+  let nextTier=null;
+  for(const t of TIER_THRESHOLDS){if(t.min>myR.length){nextTier=t;break;}}
+  const tierLadder=TIER_THRESHOLDS.map((t,i)=>{
+    const isCurrent=t.id===curTier.id;
+    const isUnlocked=myR.length>=t.min;
+    const rangeLbl=i<TIER_THRESHOLDS.length-1?(t.min+'–'+(TIER_THRESHOLDS[i+1].min-1)+' books'):(t.min+'+ books');
+    return '<div style="display:flex;align-items:center;gap:14px;padding:14px;background:'+(isCurrent?'rgba(93,202,165,0.08)':'var(--bg2)')+';border:'+(isCurrent?'1px solid var(--tc)':'0.5px solid var(--border)')+';border-radius:14px;margin-bottom:8px;opacity:'+(isUnlocked?'1':'0.45')+';transition:opacity 0.2s;">'+
+      '<img src="'+t.img+'" alt="'+t.label+'" style="width:52px;height:52px;flex-shrink:0;filter:'+(isUnlocked?'none':'grayscale(0.7)')+';">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;"><div style="font-family:\'DM Serif Display\',serif;font-size:18px;color:var(--text);">'+t.label+'</div>'+(isCurrent?'<span style="font-size:9px;background:var(--tc);color:var(--tc-dark);border-radius:6px;padding:2px 7px;font-weight:700;">CURRENT</span>':isUnlocked?'<span style="font-size:9px;color:var(--text3);">&#10003; Unlocked</span>':'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:2px;">'+rangeLbl+'</div>'+
+        '<div style="font-size:11px;color:var(--text2);line-height:1.45;">'+tierDescs[t.id]+'</div>'+
+      '</div></div>';
+  }).join('');
+
+  // Progress bar: current tier -> next tier
+  let progressHtml='';
+  if(nextTier){
+    const prevMin=curTier.min;
+    const nextMin=nextTier.min;
+    const pct=Math.min(100,Math.round(((myR.length-prevMin)/(nextMin-prevMin))*100));
+    const remaining=nextMin-myR.length;
+    progressHtml='<div id="tierProgress" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+        '<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;">Next tier</div><div style="font-family:\'DM Serif Display\',serif;font-size:18px;color:var(--text);margin-top:2px;">'+nextTier.label+'</div></div>'+
+        '<img src="'+nextTier.img+'" alt="'+nextTier.label+'" style="width:42px;height:42px;opacity:0.5;">'+
+      '</div>'+
+      '<div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-bottom:8px;">'+
+        '<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--tc),#85B7EB);border-radius:4px;transition:width 0.5s;"></div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--text2);">'+remaining+' more book'+(remaining!==1?'s':'')+' until '+nextTier.label+'</div>'+
+    '</div>';
+  }else{
+    progressHtml='<div id="tierProgress" style="background:linear-gradient(135deg,var(--tc),#85B7EB);border-radius:14px;padding:16px;margin-bottom:14px;text-align:center;color:#fff;"><div style="font-family:\'DM Serif Display\',serif;font-size:18px;margin-bottom:4px;">&#127942; Top tier reached</div><div style="font-size:12px;opacity:0.9;">You\'ve made it to Platinum. Keep reading!</div></div>';
+  }
+  const achH=progressHtml+'<div style="margin-top:6px;">'+tierLadder+'</div>';
   let wlH='';
   if(wl.length===0){
     wlH='<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>';
@@ -1954,10 +1990,18 @@ async function renderProfile(){
     recH+='</div>';
   }
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><button onclick="openSettings()" style="position:absolute;top:14px;right:62px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Settings"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button><button onclick="shareProfile()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Share profile"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;display:flex;align-items:center;justify-content:center;gap:6px;">${esc(name)} ${tierBadgeHtml(myR.length,24)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><button onclick="openSettings()" style="position:absolute;top:14px;right:62px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Settings"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button><button onclick="shareProfile()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Share profile"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div style="display:flex;justify-content:center;margin:8px 0 18px;">
+  <div onclick="SS('profile');setTimeout(()=>document.getElementById('tierProgress')?.scrollIntoView({behavior:'smooth',block:'center'}),200)" style="background:rgba(255,255,255,0.06);border:0.5px solid var(--border);border-radius:16px;padding:8px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;backdrop-filter:blur(10px);">
+    <img src="${getTier(myR.length).img}" alt="${getTier(myR.length).label}" style="width:38px;height:38px;display:block;">
+    <div style="text-align:left;">
+      <div style="font-size:9px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;">Your tier</div>
+      <div style="font-size:14px;color:#fff;font-weight:700;font-family:\'DM Serif Display\',serif;">${getTier(myR.length).label}</div>
+    </div>
+  </div>
+</div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
-    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
+    `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Reader tiers</div>${achH}</div>`+
     `<div style="padding:14px 18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div onclick="SS('diary')" style="background:linear-gradient(135deg,var(--tc),#85B7EB);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><div style="font-size:22px;">&#128214;</div><div style="flex:1;"><div style="font-size:14px;color:#fff;font-weight:600;">Open your Diary</div><div style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:1px;">Your reading personality + journey</div></div><div style="color:#fff;font-size:14px;">&#8250;</div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Wishlist (${wl.length})</div>${wlH}</div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Recently rated</div>${recH}</div>`+
@@ -2099,9 +2143,13 @@ window.voteReview=async(reviewDocId,vote)=>{
 // ─────────────────────────────────────────────
 // THEME PAGE — opens when a theme pill is clicked
 // ─────────────────────────────────────────────
+window.themeBack=()=>{const prev=_backStack.pop()||'home';SS(prev);};
 window.openTheme=themeId=>{
   const theme=THEMES.find(t=>t.id===themeId);
   if(!theme)return;
+  // Track where we came from
+  const cur=document.querySelector('.screen.on')?.id?.replace('S-','')||'home';
+  if(cur!=='theme')_backStack.push(cur);
   SS('theme');
   const isbns=THEME_TO_BOOKS[themeId]||[];
   // Build book list from all GENRE_BOOKS where ISBN matches
@@ -2241,7 +2289,27 @@ async function loadDiary(){
 
 // Hook SS to load diary
 const _origSS2=window.SS;
-window.SS=function(n){_origSS2(n);if(n==='diary')loadDiary();if(n==='theme')window.scrollTo(0,0);};
+window.SS=function(n){
+  _origSS2(n);
+  if(n==='diary')loadDiary();
+  if(n==='theme')window.scrollTo(0,0);
+  // When user returns to home, refresh recs (any dismissed book disappears)
+  if(n==='home'&&CU)refreshRecsRow();
+};
+
+async function refreshRecsRow(){
+  const el=document.getElementById('recsRow');
+  if(!el)return;
+  const recs=await buildRecommendations();
+  if(!recs.length){el.style.display='none';return;}
+  const html='<div class="stitle" style="padding:0;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span>Because you liked</span><span style="font-size:9px;background:rgba(93,202,165,0.18);color:var(--tc);border-radius:6px;padding:1px 6px;font-weight:700;">FOR YOU</span></div><div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">'+recs.map((b,i)=>{
+    const key='rec'+i+'_'+Date.now();
+    _bookStore[key]={title:b.t,authors:[b.a],author:b.a,isbn:b.isbn,cover:olc(b.isbn,'M'),description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+    return '<div style="flex-shrink:0;width:96px;cursor:pointer;" onclick="_ob(\''+key+'\')"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=\''+grad(b.t)+'\';this.removeAttribute(\'src\')" style="width:96px;height:144px;border-radius:9px;object-fit:cover;display:block;margin-bottom:5px;"><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(b.t)+'</div></div>';
+  }).join('')+'</div>';
+  el.innerHTML=html;
+  el.style.display='block';
+}
 
 // ─────────────────────────────────────────────
 // AI RECOMMENDATIONS — based on user ratings
