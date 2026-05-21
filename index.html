@@ -728,18 +728,18 @@ const THEMES=[
 // ── BADGE TIER SYSTEM ──
 // Returns tier info based on number of rated books
 function getTier(ratedCount){
-  if(ratedCount>=500)return{id:'platinum',label:'Platinum',img:'badges/platinum.png',color:'#3b82f6',min:500};
-  if(ratedCount>=100)return{id:'diamond',label:'Diamond',img:'badges/diamond.png',color:'#a8e6ff',min:100};
-  if(ratedCount>=50)return{id:'gold',label:'Gold',img:'badges/gold.png',color:'#ffd700',min:50};
-  if(ratedCount>=10)return{id:'silver',label:'Silver',img:'badges/silver.png',color:'#c0c0c0',min:10};
-  return{id:'bronze',label:'Bronze',img:'badges/bronze.png',color:'#cd7f32',min:0};
+  if(ratedCount>=500)return{id:'platinum',label:'Platinum',img:'platinum-removebg-preview.png',color:'#3b82f6',min:500};
+  if(ratedCount>=100)return{id:'diamond',label:'Diamond',img:'diamond-removebg-preview.png',color:'#a8e6ff',min:100};
+  if(ratedCount>=50)return{id:'gold',label:'Gold',img:'gold-removebg-preview.png',color:'#ffd700',min:50};
+  if(ratedCount>=10)return{id:'silver',label:'Silver',img:'silver-removebg-preview.png',color:'#c0c0c0',min:10};
+  return{id:'bronze',label:'Bronze',img:'bronze.png',color:'#cd7f32',min:0};
 }
 const TIER_THRESHOLDS=[
-  {id:'bronze',label:'Bronze',min:0,img:'badges/bronze.png'},
-  {id:'silver',label:'Silver',min:10,img:'badges/silver.png'},
-  {id:'gold',label:'Gold',min:50,img:'badges/gold.png'},
-  {id:'diamond',label:'Diamond',min:100,img:'badges/diamond.png'},
-  {id:'platinum',label:'Platinum',min:500,img:'badges/platinum.png'},
+  {id:'bronze',label:'Bronze',min:0,img:'bronze.png'},
+  {id:'silver',label:'Silver',min:10,img:'silver-removebg-preview.png'},
+  {id:'gold',label:'Gold',min:50,img:'gold-removebg-preview.png'},
+  {id:'diamond',label:'Diamond',min:100,img:'diamond-removebg-preview.png'},
+  {id:'platinum',label:'Platinum',min:500,img:'platinum-removebg-preview.png'},
 ];
 
 // Render a small tier badge inline — used next to names everywhere
