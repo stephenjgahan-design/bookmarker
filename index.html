@@ -7,7 +7,110 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#0c0e14;--bg2:#13151c;--bg3:#1a1d26;--bg4:#20232e;--border:rgba(255,255,255,0.07);--text:#f0f0f0;--text2:#9a9aaa;--text3:#55566a;--star:#e8c84a;}
-:root.light{--bg:#fbfbfd;--bg2:#f3f4f7;--bg3:#ebedf2;--bg4:#dfe2ea;--border:rgba(0,0,0,0.08);--text:#1a1a22;--text2:#4a4a55;--text3:#8a8a98;--tc-dark:#fff;}
+:root.light{
+  --bg:#f7f7fa;
+  --bg2:#ffffff;
+  --bg3:#eef0f5;
+  --bg4:#e2e5ec;
+  --border:rgba(0,0,0,0.08);
+  --text:#15161c;
+  --text2:#3d3e48;
+  --text3:#7d7e8a;
+  --tc-dark:#0a2a20;
+}
+/* LIGHT MODE — fix the dark hardcoded bits */
+:root.light body{background:var(--bg);color:var(--text);}
+:root.light .bnav{background:rgba(255,255,255,0.95);border-top:0.5px solid var(--border);backdrop-filter:blur(20px);}
+:root.light .nb{color:var(--text3);}
+:root.light .nb.on{color:var(--tc);}
+:root.light .tbar{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);}
+:root.light .backbar{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);}
+:root.light .backleft{color:var(--text2);}
+:root.light .sib{background:var(--bg2);border:1px solid var(--border);}
+:root.light .sib input{color:var(--text);}
+:root.light .sib input::placeholder{color:var(--text3);}
+:root.light .ssel{background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);}
+:root.light .gi{background:var(--bg2);}
+:root.light .gcov{background:var(--bg3);}
+:root.light .gtitle{color:var(--text);}
+:root.light .ri{background:var(--bg2);border:0.5px solid var(--border);}
+:root.light .rtitle{color:var(--text);}
+:root.light .rauthor{color:var(--text3);}
+:root.light .wlbtn{background:rgba(0,0,0,0.04);color:var(--text2);}
+:root.light .wlbtn.on{background:var(--tc);color:#fff;}
+:root.light .prhero{background:linear-gradient(160deg,#ffffff 0%,#f0f2f8 100%);}
+:root.light .prblob{opacity:0.25;}
+:root.light .prname{color:var(--text);}
+:root.light .prjoin{color:var(--text3);}
+:root.light .prstat{background:rgba(255,255,255,0.7);border:0.5px solid var(--border);}
+:root.light .prstatn{color:var(--text);}
+:root.light .prstatl{color:var(--text3);}
+:root.light .prav{background:#fff;color:var(--tc);border:2px solid var(--tc);}
+:root.light .cdot{border-color:transparent;}
+:root.light .cdot.on{border-color:#000;}
+:root.light .stitle{color:var(--text2);}
+:root.light .achcard{background:var(--bg2);border:0.5px solid var(--border);}
+:root.light .achcard.locked{opacity:0.4;background:var(--bg3);}
+:root.light .achcard-name{color:var(--text);}
+:root.light .wlitem{border-bottom:0.5px solid var(--border);}
+:root.light .wlcov{background:var(--bg3);}
+:root.light .wlrm{color:var(--text3);}
+:root.light .lmsg{color:var(--text3);}
+:root.light .spin{border-color:rgba(0,0,0,0.1);border-top-color:var(--tc);}
+:root.light .mov{background:rgba(0,0,0,0.4);}
+:root.light .msheet{background:var(--bg2);}
+:root.light .mhandle{background:rgba(0,0,0,0.15);}
+:root.light .mtitle{color:var(--text);}
+:root.light .msub{color:var(--text3);}
+:root.light .toast{background:var(--text);color:var(--bg);}
+:root.light .bkcov{background:var(--bg3);}
+:root.light .bktitle{color:var(--text);}
+:root.light .bkauthor{color:var(--text3);}
+:root.light .bsec{border-top:0.5px solid var(--border);}
+:root.light .bsec-t{color:var(--text);}
+:root.light .sumtext{color:var(--text2);}
+:root.light .revi{background:var(--bg2);border:0.5px solid var(--border);}
+:root.light .revname{color:var(--text);}
+:root.light .revbody{color:var(--text2);}
+:root.light .revdate{color:var(--text3);}
+:root.light .revpill{background:rgba(0,0,0,0.05);color:var(--text2);}
+:root.light .revstars{color:var(--star);}
+:root.light .tpills .tp{background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);}
+:root.light .tonebar-wrap{background:var(--bg3);}
+:root.light .tonebar{background:var(--tc);}
+:root.light .tonebar-lbl{color:var(--text3);}
+:root.light .rate-sticky{background:rgba(255,255,255,0.95);border-top:0.5px solid var(--border);}
+:root.light .ratebtn{background:var(--tc);color:#fff;}
+:root.light .hero-card{background:var(--bg2);}
+:root.light .hero-img{filter:none;}
+:root.light .hero-ov{background:linear-gradient(180deg,rgba(255,255,255,0) 30%,rgba(255,255,255,0.8) 100%);}
+:root.light .hero-badge{background:var(--tc);color:#fff;}
+:root.light .hero-title{color:var(--text);}
+:root.light .hero-author{color:var(--text2);}
+:root.light .hero-avg{color:var(--tc);}
+:root.light .hero-cnt{color:var(--text3);}
+:root.light .gtab{color:var(--text3);background:transparent;}
+:root.light .gtab.on{color:var(--text);border-bottom-color:var(--tc);}
+:root.light .frbanner{background:var(--bg2);border-bottom:0.5px solid var(--border);}
+:root.light .frblob{opacity:0.2;}
+:root.light .frname{color:var(--text);}
+:root.light .frsub{color:var(--text3);}
+:root.light .frav{color:#fff;}
+:root.light .fcard{background:var(--bg2);border:0.5px solid var(--border);}
+:root.light .fcardname{color:var(--text);}
+:root.light .fcardsub{color:var(--text3);}
+:root.light .nb-dot{background:var(--tc);}
+:root.light .nbadge{background:#e63946;color:#fff;}
+:root.light input,:root.light textarea,:root.light select{color:var(--text);}
+:root.light textarea{background:var(--bg2);border:1px solid var(--border);}
+:root.light .skel{background:linear-gradient(90deg,var(--bg3),var(--bg4),var(--bg3));background-size:200% 100%;}
+:root.light .aipill{background:rgba(93,202,165,0.18);color:var(--tc-dark);border:0.5px solid var(--tc);}
+:root.light .hbbar{}
+:root.light .t5slot{background:var(--bg3);border-color:rgba(0,0,0,0.12);}
+:root.light .t5plus{color:var(--text3);}
+:root.light .upill{background:var(--bg2);border:0.5px solid var(--border);}
+:root.light .upillname{color:var(--text);}
+:root.light .mode-toggle-btn{background:var(--bg3) !important;color:var(--text2) !important;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
 button,input,textarea,select{font-family:'DM Sans',sans-serif;cursor:pointer;}
@@ -1618,7 +1721,7 @@ async function renderProfile(){
   t5Html+="</div></div>";
   const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" onclick="toggleMode()" style="background:rgba(255,255,255,0.08);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
