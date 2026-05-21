@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#0c0e14;--bg2:#13151c;--bg3:#1a1d26;--bg4:#20232e;--border:rgba(255,255,255,0.07);--text:#f0f0f0;--text2:#9a9aaa;--text3:#55566a;--star:#e8c84a;}
+:root.light{--bg:#fbfbfd;--bg2:#f3f4f7;--bg3:#ebedf2;--bg4:#dfe2ea;--border:rgba(0,0,0,0.08);--text:#1a1a22;--text2:#4a4a55;--text3:#8a8a98;--tc-dark:#fff;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
 button,input,textarea,select{font-family:'DM Sans',sans-serif;cursor:pointer;}
@@ -339,7 +340,10 @@ img{display:block;}
 <!-- SEARCH -->
 <div class="screen" id="S-search">
   <div class="tbar"><div class="logo">book<em>marker</em></div></div>
-  <div style="padding:12px 18px 0;"><div class="sib"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="searchIn" placeholder="Search for any book..." oninput="onSI(this.value)" autocomplete="off"/></div></div>
+  <div style="padding:12px 18px 0;position:relative;">
+    <div class="sib"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="searchIn" placeholder="Search for any book..." oninput="onSI(this.value)" onfocus="showSuggest()" onblur="setTimeout(hideSuggest,200)" autocomplete="off"/></div>
+    <div id="suggestPanel" style="display:none;position:absolute;top:52px;left:18px;right:18px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:50;max-height:400px;overflow-y:auto;"></div>
+  </div>
   <div class="sbar"><span class="slbl">Sort by:</span><select class="ssel" id="sortSel" onchange="reSort()"><option value="relevance">Most popular</option><option value="newest">Newest first</option></select></div>
   <div class="sa"><div id="searchRes" class="rgrid" style="padding-top:8px;"></div><div id="searchMsg" class="lmsg">Start typing to search millions of books</div></div>
 </div>
@@ -736,6 +740,19 @@ const GENRE_BOOKS={
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
 let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[];
+// Restore saved theme + mode on first load
+(function(){
+  try{
+    const savedMode=localStorage.getItem('bm_mode');
+    if(savedMode==='light')document.documentElement.classList.add('light');
+    const savedTC=localStorage.getItem('bm_tc');
+    if(savedTC){
+      const darks={'#5DCAA5':'#0a2a20','#e8c84a':'#1a0800','#85B7EB':'#0a1a30','#ED93B1':'#2a0a18','#AFA9EC':'#1a1040','#F4A261':'#2a1408','#06B6A0':'#001a18'};
+      document.documentElement.style.setProperty('--tc',savedTC);
+      if(!document.documentElement.classList.contains('light'))document.documentElement.style.setProperty('--tc-dark',darks[savedTC]||'#001a10');
+    }
+  }catch(e){}
+})();
 
 // HELPERS
 const olc=(isbn,s)=>{
@@ -1144,10 +1161,84 @@ function _renderBP(book,avg,cnt,cov,revHtml){
 window.onSI=val=>{
   clearTimeout(searchT);
   const msg=document.getElementById('searchMsg');
-  if(val.length<2){document.getElementById('searchRes').innerHTML='';msg.style.display='block';msg.innerHTML='Start typing to search millions of books';return;}
+  if(!val){hideSuggest();document.getElementById('searchRes').innerHTML='';msg.style.display='block';msg.innerHTML='Start typing to search millions of books';return;}
+  if(val.length<2){renderAutocomplete(val);document.getElementById('searchRes').innerHTML='';msg.style.display='block';msg.innerHTML='Keep typing...';return;}
+  renderAutocomplete(val);
   msg.style.display='block';msg.innerHTML='<div class="spin"></div>Searching...';
-  searchT=setTimeout(()=>doSearch(val),450);
+  searchT=setTimeout(()=>{hideSuggest();doSearch(val);saveRecentSearch(val);},450);
 };
+
+// ── SEARCH SUGGESTIONS ──
+function getRecentSearches(){try{return JSON.parse(localStorage.getItem('bm_recent')||'[]');}catch(e){return[];}}
+function saveRecentSearch(q){
+  if(!q||q.length<2)return;
+  try{
+    let recent=getRecentSearches().filter(r=>r.toLowerCase()!==q.toLowerCase());
+    recent.unshift(q);
+    recent=recent.slice(0,6);
+    localStorage.setItem('bm_recent',JSON.stringify(recent));
+  }catch(e){}
+}
+window.showSuggest=()=>{
+  const val=document.getElementById('searchIn').value;
+  if(!val)renderSuggestPanel();
+};
+window.hideSuggest=()=>{const p=document.getElementById('suggestPanel');if(p)p.style.display='none';};
+window.useSuggestion=q=>{
+  const inp=document.getElementById('searchIn');
+  inp.value=q;
+  hideSuggest();
+  onSI(q);
+};
+window.clearRecent=()=>{localStorage.removeItem('bm_recent');renderSuggestPanel();};
+function renderSuggestPanel(){
+  const p=document.getElementById('suggestPanel');
+  if(!p)return;
+  const recent=getRecentSearches();
+  const trending=[
+    GENRE_BOOKS['literary fiction'][0],
+    GENRE_BOOKS['science fiction'][0],
+    GENRE_BOOKS['crime thriller'][0],
+    GENRE_BOOKS['romance novel'][0],
+    GENRE_BOOKS['horror fiction'][0],
+  ].filter(Boolean);
+  let html='';
+  if(recent.length){
+    html+='<div style="padding:12px 14px 6px;display:flex;align-items:center;justify-content:space-between;"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;">Recent</span><button onclick="clearRecent()" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;">Clear</button></div>';
+    html+=recent.map(r=>{
+      const safe=r.replace(/'/g,"&#39;");
+      return '<div onclick="useSuggestion(&quot;'+safe+'&quot;)" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2);"><span style="color:var(--text3);">&#8634;</span>'+esc(r)+'</div>';
+    }).join('');
+  }
+  html+='<div style="padding:12px 14px 6px;border-top:'+(recent.length?'0.5px solid var(--border)':'none')+';"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;">Trending on Bookmarker</span></div>';
+  html+=trending.map(b=>{
+    const safe=b.t.replace(/'/g,"&#39;");
+    return '<div onclick="useSuggestion(&quot;'+safe+'&quot;)" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2);"><span style="color:var(--tc);font-size:11px;">&#128293;</span>'+esc(b.t)+' <span style="color:var(--text3);font-size:11px;">&#183; '+esc(b.a)+'</span></div>';
+  }).join('');
+  p.innerHTML=html;
+  p.style.display='block';
+}
+function renderAutocomplete(val){
+  const p=document.getElementById('suggestPanel');
+  if(!p)return;
+  const lower=val.toLowerCase();
+  const matches=[];
+  Object.values(GENRE_BOOKS).forEach(list=>{
+    list.forEach(b=>{
+      if(matches.length>=6)return;
+      if(b.t.toLowerCase().includes(lower)||b.a.toLowerCase().includes(lower)){
+        if(!matches.find(m=>m.t===b.t))matches.push(b);
+      }
+    });
+  });
+  if(!matches.length){renderSuggestPanel();return;}
+  const html=matches.map(b=>{
+    const safe=b.t.replace(/'/g,"&#39;");
+    return '<div onclick="useSuggestion(&quot;'+safe+'&quot;)" style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=&quot;'+grad(b.t)+'&quot;;this.removeAttribute(&quot;src&quot;)" style="width:28px;height:42px;border-radius:4px;object-fit:cover;flex-shrink:0;"><div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);">'+esc(b.t)+'</div><div style="font-size:10px;color:var(--text3);">'+esc(b.a)+'</div></div></div>';
+  }).join('');
+  p.innerHTML=html;
+  p.style.display='block';
+}
 window.reSort=()=>{const q=document.getElementById('searchIn').value.trim();if(q.length>=2)doSearch(q);};
 function doSearch(q){
   const ord=document.getElementById('sortSel')?.value||'relevance';
@@ -1527,7 +1618,7 @@ async function renderProfile(){
   t5Html+="</div></div>";
   const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" onclick="toggleMode()" style="background:rgba(255,255,255,0.08);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
@@ -1546,12 +1637,20 @@ window.openAch=(ic,t,d,c,l)=>{
 
 window.setTheme=c1=>{
   TC=c1;
-  const darks={'#5DCAA5':'#0a2a20','#e8c84a':'#1a0800','#85B7EB':'#0a1a30','#ED93B1':'#2a0a18','#AFA9EC':'#1a1040'};
+  const darks={'#5DCAA5':'#0a2a20','#e8c84a':'#1a0800','#85B7EB':'#0a1a30','#ED93B1':'#2a0a18','#AFA9EC':'#1a1040','#F4A261':'#2a1408','#06B6A0':'#001a18'};
   TCD=darks[c1]||'#001a10';
   document.documentElement.style.setProperty('--tc',c1);
-  document.documentElement.style.setProperty('--tc-dark',TCD);
+  if(!document.documentElement.classList.contains('light'))document.documentElement.style.setProperty('--tc-dark',TCD);
   document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.style.background===c1));
   const b=document.getElementById('prB1');if(b)b.style.background=c1;
+  try{localStorage.setItem('bm_tc',c1);}catch(e){}
+};
+
+window.toggleMode=()=>{
+  const isLight=document.documentElement.classList.toggle('light');
+  try{localStorage.setItem('bm_mode',isLight?'light':'dark');}catch(e){}
+  const btn=document.getElementById('modeToggle');
+  if(btn)btn.innerHTML=isLight?'&#9789; Dark mode':'&#9728; Light mode';
 };
 
 // ── COLLECTION (all rated books) ──
