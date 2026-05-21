@@ -653,6 +653,28 @@ img{display:block;}
 
 <!-- INCOMING RECOMMENDATIONS LIST IS SHOWN ON FRIENDS TAB -->
 
+<!-- PICK A BOOK TO RECOMMEND TO FRIEND -->
+<div class="mov" id="pickBookMov">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <button onclick="closeM('pickBookMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle">Send a book</div>
+    <div class="msub" id="pickBookSub">Pick a book to recommend</div>
+    <div class="sib" style="margin:14px 0 12px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="pickBookSearch" placeholder="Search any book..." oninput="onPickBookSearch(this.value)" autocomplete="off"/></div>
+    <div id="pickBookResults" style="max-height:380px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- TUTORIAL -->
+<div class="mov" id="tutMov">
+  <div class="msheet" style="max-height:80vh;">
+    <input type="hidden" id="tutStep" value="0"/>
+    <button onclick="skipTutorial()" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Skip</button>
+    <div class="mhandle"></div>
+    <div id="tutContent" style="padding:20px 4px 8px;"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -1317,7 +1339,7 @@ function _renderBP(book,avg,cnt,cov,revHtml){
   // Show book's matched emotional themes (clickable) + Google categories as fallback
   let theme='';
   if(bookThemes.length){
-    theme=bookThemes.map(t=>`<div class="tpill" style="cursor:pointer;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);color:var(--tc);" onclick="openTheme('${t.id}')">${t.ic} ${t.label}</div>`).join('');
+    theme=bookThemes.map(t=>`<div class="tpill" style="cursor:pointer;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);color:var(--tc);padding:6px 12px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;transition:transform 0.15s,background 0.2s;" onclick="openTheme('${t.id}')" onmousedown="this.style.transform='scale(0.94)'" onmouseup="this.style.transform=''" title="Explore theme">${t.ic} ${t.label} &#8250;</div>`).join('');
   }
   const catPills=(book.categories||[]).slice(0,3).map(c=>`<div class="tpill">${esc(c)}</div>`).join('');
   theme=(theme+catPills)||'<div class="tpill">Fiction</div>';
@@ -1629,14 +1651,35 @@ async function loadHome(){
 async function checkFriendReqs(){
   if(!CU)return;
   try{
-    const s=await getDocs(query(collection(db,'friendRequests'),where('toId','==',CU.uid),where('status','==','pending')));
+    const [reqSnap,recSnap]=await Promise.all([
+      getDocs(query(collection(db,'friendRequests'),where('toId','==',CU.uid),where('status','==','pending'))),
+      getDocs(query(collection(db,'recommendations'),where('toId','==',CU.uid))),
+    ]);
+    const unseenRecs=recSnap.docs.filter(d=>!d.data().seen).length;
+    const total=reqSnap.size+unseenRecs;
     const badge=document.getElementById('frReqBadge');
-    if(badge)badge.style.display=s.size>0?'block':'none';
+    if(badge){
+      badge.style.display=total>0?'block':'none';
+      if(total>0)badge.textContent=total>9?'9+':total;
+    }
   }catch(e){}
 }
 
 async function renderFriends(){
   const el=document.getElementById('friendsContent');
+  // Mark incoming recommendations as seen when this tab opens
+  if(CU){
+    try{
+      const recSnap=await getDocs(query(collection(db,'recommendations'),where('toId','==',CU.uid)));
+      const unseen=recSnap.docs.filter(d=>!d.data().seen);
+      for(const d of unseen){
+        try{await updateDoc(doc(db,'recommendations',d.id),{seen:true});}catch(e){}
+      }
+      // Clear the badge
+      const badge=document.getElementById('frReqBadge');
+      if(badge)checkFriendReqs();
+    }catch(e){}
+  }
   if(!CU){
     el.innerHTML=`<div style="padding:50px 20px;text-align:center;" class="anim-fade-up"><div style="font-size:44px;margin-bottom:14px;">&#128101;</div><div style="font-size:17px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to see friends</div><div style="font-size:13px;color:var(--text3);margin-bottom:22px;">Connect with other readers</div><button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:12px 28px;font-size:14px;font-weight:700;">Sign in</button></div>`;
     return;
@@ -1710,7 +1753,7 @@ async function renderFriends(){
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
           _bookStore['friend_'+fid]={uid:fid,name:fd.name,ratingCount:rc.size,c};
-          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div>${friendT5Html}</div></div>`;
+          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><button onclick="event.stopPropagation();openPickBookForFriend('${fid}','${esc(fd.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128172; Recommend</button><div style="font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div>${friendT5Html}</div></div>`;
         }catch(e){}
       }
     }
@@ -1823,14 +1866,14 @@ async function renderProfile(){
   t5Html+="</div></div>";
   const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><button onclick="shareProfile()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Share profile"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
     `<div style="padding:14px 18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div onclick="SS('diary')" style="background:linear-gradient(135deg,var(--tc),#85B7EB);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><div style="font-size:22px;">&#128214;</div><div style="flex:1;"><div style="font-size:14px;color:#fff;font-weight:600;">Open your Diary</div><div style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:1px;">Your reading personality + journey</div></div><div style="color:#fff;font-size:14px;">&#8250;</div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Wishlist (${wl.length})</div>${wlH}</div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;">Recently rated</div>${recH}</div>`+
-    `<div style="padding:18px 18px 32px;" class="anim-fade-up"><button onclick="window._so(window._auth).then(()=>{showToast('Signed out &#128075;');SS('home');})" style="width:100%;background:var(--bg3);color:var(--text3);border:0.5px solid var(--border);border-radius:14px;padding:13px;font-size:14px;transition:background 0.15s;">Sign out</button></div>`;
+    `<div style="padding:18px 18px 32px;" class="anim-fade-up"><button onclick="openTutorial()" style="width:100%;background:transparent;color:var(--text2);border:0.5px solid var(--border);border-radius:14px;padding:13px;font-size:14px;margin-bottom:10px;cursor:pointer;">&#10067; How to use Bookmarker</button><button onclick="window._so(window._auth).then(()=>{showToast('Signed out &#128075;');SS('home');})" style="width:100%;background:var(--bg3);color:var(--text3);border:0.5px solid var(--border);border-radius:14px;padding:13px;font-size:14px;transition:background 0.15s;">Sign out</button></div>`;
 }
 
 window.openAch=(ic,t,d,c,l)=>{
@@ -2202,6 +2245,159 @@ async function getIncomingRecs(){
     return recs.slice(0,5);
   }catch(e){return[];}
 }
+
+// ─────────────────────────────────────────────
+// SHARE PROFILE — copies a link to user's profile
+// ─────────────────────────────────────────────
+window.shareProfile=async()=>{
+  if(!CU){openAuth();return;}
+  const url='https://bookmarker-umber.vercel.app/?profile='+CU.uid;
+  const name=CU.displayName||CU.email.split('@')[0];
+  const text='Check out '+name+' on Bookmarker';
+  // Try native share first (mobile)
+  if(navigator.share){
+    try{
+      await navigator.share({title:'Bookmarker',text,url});
+      return;
+    }catch(e){/* user cancelled, fall through to copy */}
+  }
+  // Desktop fallback — copy to clipboard
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast('Profile link copied!');
+  }catch(e){
+    // Last fallback — show in alert
+    prompt('Copy this link to share your profile:',url);
+  }
+};
+
+// ─────────────────────────────────────────────
+// PICK A BOOK TO RECOMMEND TO A FRIEND (from Friends tab)
+// ─────────────────────────────────────────────
+let _recTargetId='',_recTargetName='';
+window.openPickBookForFriend=(toId,toName)=>{
+  if(!CU){openAuth();return;}
+  _recTargetId=toId;_recTargetName=toName;
+  document.getElementById('pickBookSub').textContent='Pick a book to send to '+toName;
+  const el=document.getElementById('pickBookResults');
+  el.innerHTML='<div style="text-align:center;padding:20px 0;font-size:13px;color:var(--text3);">Type to search or pick from your rated books</div>';
+  document.getElementById('pickBookSearch').value='';
+  document.getElementById('pickBookMov').classList.add('open');
+  // Load user's own rated books for quick picks
+  loadMyRatedForPicker();
+};
+
+let pickT=null;
+window.onPickBookSearch=val=>{
+  clearTimeout(pickT);
+  const el=document.getElementById('pickBookResults');
+  if(val.length<2){loadMyRatedForPicker();return;}
+  el.innerHTML='<div class="lmsg" style="padding:20px 0;"><div class="spin"></div>Searching...</div>';
+  pickT=setTimeout(()=>{
+    fetch(`https://www.googleapis.com/books/v1/volumes?key=${GKEY}&q=${encodeURIComponent(val)}&maxResults=8`)
+      .then(r=>r.json()).then(d=>{
+        const items=d.items||[];
+        if(!items.length){el.innerHTML='<div style="text-align:center;padding:20px 0;font-size:13px;color:var(--text3);">No books found</div>';return;}
+        renderPickResults(items.map(it=>{
+          const v=it.volumeInfo||{};
+          const isbn=(v.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+          let cover=isbn?olc(isbn.identifier,'M'):'';
+          if(!cover&&v.imageLinks)cover=(v.imageLinks.thumbnail||'').replace('http:','https:');
+          return{title:v.title||'',author:(v.authors||[''])[0],isbn:isbn?isbn.identifier:'',cover};
+        }));
+      }).catch(()=>{el.innerHTML='<div class="lmsg">Search failed</div>';});
+  },350);
+};
+
+async function loadMyRatedForPicker(){
+  const el=document.getElementById('pickBookResults');
+  try{
+    const s=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));
+    const books=s.docs.map(d=>d.data()).map(r=>({title:r.bookTitle,author:'',isbn:r.bookId||'',cover:r.bookCover||''}));
+    if(!books.length){el.innerHTML='<div style="text-align:center;padding:20px 0;font-size:13px;color:var(--text3);">Search for any book above</div>';return;}
+    el.innerHTML='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Your rated books</div>';
+    el.innerHTML+=renderPickResultsHtml(books);
+  }catch(e){el.innerHTML='';}
+}
+function renderPickResults(books){
+  document.getElementById('pickBookResults').innerHTML=renderPickResultsHtml(books);
+}
+function renderPickResultsHtml(books){
+  return books.map((b,i)=>{
+    const key='pkb'+i+'_'+Date.now();
+    _bookStore[key]=b;
+    return '<div onclick="confirmRecommend(\''+key+'\')" style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">'+(b.cover?'<img src="'+b.cover+'" style="width:36px;height:54px;border-radius:5px;object-fit:cover;flex-shrink:0;">':'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:500;">'+esc(b.title)+'</div><div style="font-size:11px;color:var(--text3);">'+esc(b.author||'')+'</div></div><div style="font-size:18px;color:var(--tc);">&#8594;</div></div>';
+  }).join('');
+}
+window.confirmRecommend=async key=>{
+  const book=_bookStore[key];
+  if(!book||!_recTargetId)return;
+  try{
+    const docId=CU.uid+'_'+_recTargetId+'_'+(book.isbn||book.title.substring(0,30));
+    await setDoc(doc(db,'recommendations',docId),{
+      fromId:CU.uid,fromName:CU.displayName||CU.email.split('@')[0],
+      toId:_recTargetId,toName:_recTargetName,
+      bookId:book.isbn||book.title.substring(0,30),
+      bookTitle:book.title,bookCover:book.cover||'',bookAuthor:book.author||'',
+      createdAt:serverTimestamp(),seen:false,
+    });
+    closeM('pickBookMov');
+    showToast('Sent to '+_recTargetName+'!');
+  }catch(e){console.error(e);showToast('Try again');}
+};
+
+// ─────────────────────────────────────────────
+// FIRST-RUN TUTORIAL
+// ─────────────────────────────────────────────
+const TUTORIAL_STEPS=[
+  {ic:'📚',title:'Welcome to Bookmarker',body:'A social home for everything you read. Rate books, write reviews, follow friends, and find your next favourite.'},
+  {ic:'🔍',title:'Find any book',body:'Tap the Search tab to find millions of books. Or browse the Shelf for trending picks across genres.'},
+  {ic:'⭐',title:'Rate and review',body:'Tap a book to open it, then tap Rate. Half-star ratings, optional review, public or private — your call.'},
+  {ic:'❤️',title:'Build your Top 5',body:'On your profile, fill your Top 5 favourite books. Friends see these on your banner.'},
+  {ic:'👥',title:'Connect with friends',body:'Search by name in the Friends tab to send requests. Once connected, see what they\'re reading and recommend books to each other.'},
+  {ic:'📖',title:'Open your Diary',body:'After a few ratings, your Diary unlocks — your reading personality, favourite themes, and a timeline of every book.'},
+];
+
+window.openTutorial=()=>{
+  document.getElementById('tutStep').value='0';
+  renderTutorialStep();
+  document.getElementById('tutMov').classList.add('open');
+};
+window.nextTutorialStep=()=>{
+  const cur=parseInt(document.getElementById('tutStep').value);
+  if(cur>=TUTORIAL_STEPS.length-1){
+    closeM('tutMov');
+    try{localStorage.setItem('bm_tutSeen','1');}catch(e){}
+    return;
+  }
+  document.getElementById('tutStep').value=cur+1;
+  renderTutorialStep();
+};
+window.prevTutorialStep=()=>{
+  const cur=parseInt(document.getElementById('tutStep').value);
+  if(cur<=0)return;
+  document.getElementById('tutStep').value=cur-1;
+  renderTutorialStep();
+};
+window.skipTutorial=()=>{
+  closeM('tutMov');
+  try{localStorage.setItem('bm_tutSeen','1');}catch(e){}
+};
+function renderTutorialStep(){
+  const cur=parseInt(document.getElementById('tutStep').value);
+  const step=TUTORIAL_STEPS[cur];
+  const dots=TUTORIAL_STEPS.map((_,i)=>'<div style="width:'+(i===cur?'18px':'6px')+';height:6px;border-radius:3px;background:'+(i===cur?'var(--tc)':'rgba(255,255,255,0.2)')+';transition:all 0.25s;"></div>').join('');
+  document.getElementById('tutContent').innerHTML='<div style="text-align:center;padding:8px 0 4px;"><div style="font-size:52px;margin-bottom:14px;">'+step.ic+'</div><div style="font-family:\'DM Serif Display\',serif;font-size:24px;color:var(--text);margin-bottom:10px;">'+step.title+'</div><div style="font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:24px;">'+step.body+'</div></div><div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px;">'+dots+'</div><div style="display:flex;gap:10px;"><button onclick="prevTutorialStep()" style="flex:1;background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:14px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;'+(cur===0?'opacity:0.4;pointer-events:none;':'')+'">Back</button><button onclick="nextTutorialStep()" style="flex:2;background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;">'+(cur===TUTORIAL_STEPS.length-1?'Get started':'Next')+'</button></div>';
+}
+
+// Show tutorial on first ever load
+setTimeout(()=>{
+  try{
+    if(!localStorage.getItem('bm_tutSeen')){
+      openTutorial();
+    }
+  }catch(e){}
+},1200);
 
 loadHome();
 </script>
