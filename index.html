@@ -314,6 +314,7 @@ img{display:block;}
       <div class="stitle" style="padding:0;margin-bottom:10px;">For you</div>
       <div id="heroWrap" style="margin-bottom:18px;"><div class="skel skel-cover" style="height:230px;border-radius:18px;"></div></div>
     </div>
+    <div style="padding:0 18px 14px;"><div onclick="SS('bookclub')" style="background:linear-gradient(135deg,rgba(93,202,165,0.12),rgba(133,183,235,0.08));border:0.5px solid rgba(93,202,165,0.3);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><div style="font-size:22px;">&#128218;</div><div style="flex:1;"><div style="font-size:13px;color:var(--text);font-weight:600;">Book Clubs <span style="font-size:9px;background:var(--tc);color:var(--tc-dark);border-radius:6px;padding:1px 6px;margin-left:4px;font-weight:700;">SOON</span></div><div style="font-size:11px;color:var(--text3);margin-top:1px;">Read and discuss with others</div></div><div style="font-size:14px;color:var(--text3);">&#8250;</div></div></div>
     <div class="stitle">Your genres</div>
     <div class="gtabs" id="genreTabs">
       <div class="gtab on" onclick="loadGenre('crime thriller',this)"><div class="gtcov" id="gc0"></div><div class="gtname">Crime</div></div>
@@ -369,6 +370,50 @@ img{display:block;}
       <div style="font-size:20px;color:var(--text2);margin-bottom:8px;font-family:'DM Serif Display',serif;">Sign in to Bookmarker</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.6;">Save ratings, write reviews<br>and track every book you read</div>
       <button onclick="openAuth()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:14px 36px;font-size:15px;font-weight:700;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">Sign in or create account</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION -->
+<div class="screen" id="S-collection">
+  <div class="backbar"><div class="backleft" onclick="SS('profile')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Profile</span></div></div>
+  <div style="padding:18px 18px 8px;">
+    <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);margin-bottom:4px;">Your collection</div>
+    <div id="collCount" style="font-size:12px;color:var(--text3);margin-bottom:14px;">Loading...</div>
+    <div class="sib" style="margin-bottom:10px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="collSearchIn" placeholder="Search your books..." oninput="filterCollection()" autocomplete="off"/></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <select id="collSort" onchange="filterCollection()" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:6px 10px;outline:none;flex:1;">
+        <option value="recent">Recently rated</option>
+        <option value="rating-high">Highest rated</option>
+        <option value="rating-low">Lowest rated</option>
+        <option value="title">Title A-Z</option>
+      </select>
+      <button id="collViewToggle" onclick="toggleCollView()" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:6px 12px;cursor:pointer;">Grid</button>
+    </div>
+  </div>
+  <div class="sa" id="collContent" style="padding:0 18px 20px;"></div>
+</div>
+
+<!-- BOOK CLUB COMING SOON -->
+<div class="screen" id="S-bookclub">
+  <div class="backbar"><div class="backleft" onclick="SS('home')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg><span>Back</span></div></div>
+  <div class="sa" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;min-height:60vh;">
+    <div style="position:relative;width:100%;max-width:340px;text-align:center;" class="anim-fade-up">
+      <div style="position:absolute;width:200px;height:200px;background:var(--tc);border-radius:50%;filter:blur(80px);opacity:0.25;top:0;left:50%;transform:translateX(-50%);z-index:0;"></div>
+      <div style="position:absolute;width:160px;height:160px;background:#85B7EB;border-radius:50%;filter:blur(70px);opacity:0.2;bottom:30%;right:-20%;z-index:0;"></div>
+      <div style="position:relative;z-index:1;">
+        <div style="display:inline-block;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:20px;padding:5px 14px;color:var(--tc);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">Coming Soon</div>
+        <div style="font-size:60px;margin-bottom:18px;">&#128218;</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:32px;color:var(--text);line-height:1.15;margin-bottom:12px;">Book Clubs</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px;">Read together. Discuss in real time. Build communities around the books you love.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left;">
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:22px;">&#128172;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Group discussions</div><div style="font-size:11px;color:var(--text3);">Chat about chapters as you read</div></div></div>
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:22px;">&#128197;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Synced reading schedules</div><div style="font-size:11px;color:var(--text3);">Stay on pace with your club</div></div></div>
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:22px;">&#128512;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Real connections</div><div style="font-size:11px;color:var(--text3);">Find people who love what you love</div></div></div>
+        </div>
+        <button id="bcWaitlistBtn" onclick="joinWaitlist()" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:13px 28px;font-size:14px;font-weight:700;transition:transform 0.15s;">Join the waitlist</button>
+        <div id="bcWaitlistMsg" style="font-size:11px;color:var(--text3);margin-top:14px;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1031,13 +1076,49 @@ window.openBook=async book=>{
   }
 };
 
+function _authorSectionHtml(book){
+  const authorName=(book.authors&&book.authors[0])||book.author||'';
+  if(!authorName||authorName==='Unknown')return '';
+  // Find other books by this author in our hardcoded lists
+  const others=[];
+  Object.keys(GENRE_BOOKS).forEach(g=>{
+    GENRE_BOOKS[g].forEach(b=>{
+      if(b.a&&b.a.toLowerCase()===authorName.toLowerCase()&&b.t!==book.title&&!others.find(o=>o.t===b.t)){
+        others.push(b);
+      }
+    });
+  });
+  const otherBooksHtml=others.length?`<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;">`+others.slice(0,8).map((b,i)=>{
+    const key='auth'+i+'_'+Date.now();
+    _bookStore[key]={title:b.t,authors:[b.a],author:b.a,isbn:b.isbn,cover:olc(b.isbn,'M'),description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+    return `<div style="flex-shrink:0;width:80px;cursor:pointer;" onclick="_ob('${key}')"><img src="${olc(b.isbn,'M')}" onerror="this.style.background='${grad(b.t)}';this.removeAttribute('src')" style="width:80px;height:120px;border-radius:8px;object-fit:cover;margin-bottom:4px;display:block;"><div style="font-size:10px;color:var(--text3);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(b.t)}</div></div>`;
+  }).join('')+`</div>`:`<div style="font-size:12px;color:var(--text3);">No other books from ${esc(authorName)} in our database yet</div>`;
+  const initials=authorName.split(' ').map(p=>p.charAt(0)).slice(0,2).join('').toUpperCase();
+  return `<div class="bsec anim-fade-up" style="animation-delay:0.13s;"><div class="bsec-t">About the author</div><div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--tc),#85B7EB);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--tc-dark);flex-shrink:0;">${initials}</div><div style="flex:1;min-width:0;"><div style="font-size:14px;color:var(--text);font-weight:600;">${esc(authorName)}</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">${others.length} book${others.length!==1?'s':''} in Bookmarker</div></div></div>${otherBooksHtml}</div>`;
+}
+
 function _buildRevs(snap){
   if(!snap||snap.empty)return`<div style="padding:16px 0;font-size:14px;color:var(--tc);font-weight:500;">&#127381; Be the first to review this book!</div>`;
-  // Filter public only and sort newest first in JS (no composite index needed)
-  let docs=snap.docs.map(d=>d.data()).filter(r=>r.privacy==='public'||!r.privacy);
-  docs.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+  // Pull docs with id, filter public only
+  let docs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.privacy==='public'||!r.privacy);
   if(!docs.length)return`<div style="padding:16px 0;font-size:14px;color:var(--tc);font-weight:500;">&#127381; Be the first to review this book!</div>`;
-  return docs.map((r,i)=>{let st='';for(let j=1;j<=5;j++)st+=j<=Math.round(r.rating)?'&#9733;':'&#9734;';const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';return`<div class="revi" style="animation-delay:${i*0.04}s;"><div class="revhdr"><span class="revname">${esc(r.userName)}</span><span class="revpill">${r.rating}&#9733;</span></div><div class="revstars">${st}</div>${r.review?`<div class="revbody">${esc(r.review)}</div>`:''}<div class="revdate">${dt}</div></div>`;}).join('');
+  // Rank by score: likes minus dislikes, then recency
+  docs.sort((a,b)=>{
+    const sa=(a.likes||0)-(a.dislikes||0);
+    const sb=(b.likes||0)-(b.dislikes||0);
+    if(sb!==sa)return sb-sa;
+    return (b.timestamp?.seconds||0)-(a.timestamp?.seconds||0);
+  });
+  const topScore=(docs[0].likes||0)-(docs[0].dislikes||0);
+  return docs.map((r,i)=>{
+    let st='';for(let j=1;j<=5;j++)st+=j<=Math.round(r.rating)?'&#9733;':'&#9734;';
+    const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';
+    const likes=r.likes||0,dislikes=r.dislikes||0;
+    const score=likes-dislikes;
+    const isMostHelpful=i===0&&score>=3;
+    const helpfulBadge=isMostHelpful?'<span style="font-size:9px;background:rgba(93,202,165,0.18);color:var(--tc);border-radius:8px;padding:2px 7px;font-weight:600;">&#10024; Most helpful</span>':'';
+    return`<div class="revi" style="animation-delay:${i*0.04}s;${isMostHelpful?'background:rgba(93,202,165,0.04);border-left:2px solid var(--tc);padding-left:10px;border-radius:0 8px 8px 0;':''}"><div class="revhdr"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="revname">${esc(r.userName)}</span>${helpfulBadge}</div><span class="revpill">${r.rating}&#9733;</span></div><div class="revstars">${st}</div>${r.review?`<div class="revbody">${esc(r.review)}</div>`:''}<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;"><div class="revdate">${dt}</div><div style="display:flex;align-items:center;gap:4px;"><button onclick="voteReview('${r.id}','like')" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:4px 9px;display:flex;align-items:center;gap:4px;color:var(--text2);font-size:11px;cursor:pointer;transition:transform 0.15s,background 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''">&#128077; ${likes}</button><button onclick="voteReview('${r.id}','dislike')" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:14px;padding:4px 9px;display:flex;align-items:center;gap:4px;color:var(--text2);font-size:11px;cursor:pointer;transition:transform 0.15s,background 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''">&#128078; ${dislikes}</button></div></div></div>`;
+  }).join('');
 }
 
 function _renderBP(book,avg,cnt,cov,revHtml){
@@ -1052,6 +1133,7 @@ function _renderBP(book,avg,cnt,cov,revHtml){
     `<div class="bkhero anim-fade-up">${cov}<div class="bkmeta"><div class="bktitle">${esc(book.title)}</div><div class="bkauth">${esc((book.authors||[]).join(', '))}${book.publishedDate?' &#183; '+book.publishedDate:''}</div>${hasR?`<div class="fstars">${frac}</div><div class="avgnum">${r}</div><div class="rcnt">${cnt.toLocaleString()} rating${cnt!==1?'s':''} on Bookmarker</div>`:`<div style="font-size:13px;color:var(--tc);margin-bottom:12px;font-weight:500;">Be the first to rate!</div>`}<a href="${buy}" target="_blank" class="buybtn">&#128722; Buy on Google Books</a><button class="wlbig${won?' on':''}" onclick="toggleWL()">${won?'&#128278; In your wishlist':'&#128278; Add to wishlist'}</button></div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.05s;"><div class="bsec-t">Summary<span class="aipill">AI</span></div><div class="sumtext">${esc((book.description||'').substring(0,340))||'<span style="color:var(--text3);">Loading description...</span>'}</div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.1s;"><div class="bsec-t">Themes</div><div class="tpills">${theme}</div></div>`+
+    _authorSectionHtml(book)+
     `<div class="bsec anim-fade-up" style="animation-delay:0.12s;"><div class="bsec-t">Tone</div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#555;font-size:11px;">Dark</span></div><div class="tone-tr"><div class="tone-f" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow</span><span class="tone-lbl" style="color:#555;font-size:11px;">Fast</span></div><div class="tone-tr"><div class="tone-f" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#555;font-size:11px;">Heavy</span></div><div class="tone-tr"><div class="tone-f" style="width:62%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.15s;"><div class="bsec-t">Reviews${cnt?` (${cnt.toLocaleString()})`:''}</div><div id="revList">${revHtml}</div></div>`+
     `<div style="height:80px;"></div>`;
@@ -1430,7 +1512,7 @@ async function renderProfile(){
   const achH=achs.map(a=>`<div class="achcard${a.ok?'':' locked'}" onclick="openAch('${a.ic}','${a.n}','${a.d}','${a.c}','${a.l}')"><div class="achcard-icon">${a.ic}</div><div class="achcard-name">${a.n}</div><span class="rarity ${a.c}">${a.l}</span></div>`).join('');
   const wlH=wl.length===0?`<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>`:wl.map(w=>`<div class="wlitem" onclick='openBook({title:"${esc(w.title)}",authors:${JSON.stringify(w.authors||[])},rating:0,ratingCount:"",cover:"${w.cover||''}",description:"",categories:[],publishedDate:"",isbn:"${w.isbn||''}",previewLink:""})'>${w.cover?`<img class="wlcov" src="${w.cover}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')" alt="">`:'<div class="wlcov"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(w.title)}</div><div style="font-size:11px;color:var(--text3);">${esc((w.authors||[]).join(', '))}</div></div><button class="wlrm" onclick="event.stopPropagation();removeWL('${w.bookId}')">&#x2715;</button></div>`).join('');
   // Build Top 5 HTML using safe string concat (no nested template literals)
-  let t5Html="<div style=\"padding:18px;border-bottom:0.5px solid var(--border);\" class=\"anim-fade-up\"><div class=\"stitle\" style=\"padding:0;margin-bottom:12px;\">Top 5 favourite books</div><div class=\"t5row\">";
+  let t5Html="<div style=\"padding:18px;border-bottom:0.5px solid var(--border);\" class=\"anim-fade-up\"><div class=\"stitle\" style=\"padding:0;margin-bottom:12px;\">Top 5 Books</div><div class=\"t5row\">";
   for(let i=0;i<5;i++){
     const b=top5[i];
     if(b){
@@ -1445,7 +1527,7 @@ async function renderProfile(){
   t5Html+="</div></div>";
   const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
@@ -1470,6 +1552,112 @@ window.setTheme=c1=>{
   document.documentElement.style.setProperty('--tc-dark',TCD);
   document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.style.background===c1));
   const b=document.getElementById('prB1');if(b)b.style.background=c1;
+};
+
+// ── COLLECTION (all rated books) ──
+let collMode='grid', collAll=[];
+window.SS_orig=window.SS;
+
+// Hook SS to load collection when navigating to it
+const _origSS=window.SS;
+window.SS=function(n){
+  _origSS(n);
+  if(n==='collection')loadCollection();
+};
+
+async function loadCollection(){
+  if(!CU){SS('profile');return;}
+  document.getElementById('collContent').innerHTML='<div class="lmsg"><div class="spin"></div>Loading...</div>';
+  try{
+    const s=await getDocs(query(collection(db,'ratings'),where('userId','==',CU.uid)));
+    collAll=s.docs.map(d=>d.data());
+    collAll.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+    document.getElementById('collCount').textContent=collAll.length+' book'+(collAll.length!==1?'s':'')+' rated';
+    filterCollection();
+  }catch(e){document.getElementById('collContent').innerHTML='<div class="lmsg">Error loading</div>';}
+}
+
+window.toggleCollView=()=>{
+  collMode=collMode==='grid'?'list':'grid';
+  document.getElementById('collViewToggle').textContent=collMode==='grid'?'Grid':'List';
+  filterCollection();
+};
+
+window.filterCollection=()=>{
+  const q=(document.getElementById('collSearchIn').value||'').toLowerCase();
+  const sortBy=document.getElementById('collSort').value;
+  let filtered=collAll.filter(r=>!q||r.bookTitle.toLowerCase().includes(q));
+  if(sortBy==='rating-high')filtered.sort((a,b)=>b.rating-a.rating);
+  else if(sortBy==='rating-low')filtered.sort((a,b)=>a.rating-b.rating);
+  else if(sortBy==='title')filtered.sort((a,b)=>a.bookTitle.localeCompare(b.bookTitle));
+  else filtered.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+  const el=document.getElementById('collContent');
+  if(!filtered.length){el.innerHTML='<div class="lmsg">No books match</div>';return;}
+  if(collMode==='grid'){
+    el.innerHTML='<div class="grid3" style="padding:0;">'+filtered.map((r,i)=>{
+      const key='col'+i+'_'+Date.now();
+      _bookStore[key]={title:r.bookTitle,authors:[''],rating:0,ratingCount:'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',isbn:r.bookId||'',previewLink:''};
+      return '<div class="gi anim-fade-up" style="animation-delay:'+(i*0.02)+'s;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<div style="position:relative;"><img class="gcov" src="'+r.bookCover+'" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')" loading="lazy"><div style="position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,0.75);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:var(--star);">&#9733; '+r.rating+'</div></div>':'<div class="gcov" style="background:'+grad(r.bookTitle)+';"></div>')+'<div class="gtitle">'+esc(r.bookTitle)+'</div></div>';
+    }).join('')+'</div>';
+  }else{
+    el.innerHTML=filtered.map((r,i)=>{
+      const key='col'+i+'_'+Date.now();
+      _bookStore[key]={title:r.bookTitle,authors:[''],rating:0,ratingCount:'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',isbn:r.bookId||'',previewLink:''};
+      let stars='';for(let j=0;j<Math.round(r.rating);j++)stars+='&#9733;';
+      const dt=r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}):'';
+      return '<div class="anim-fade-up" style="animation-delay:'+(i*0.02)+'s;display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" style="width:46px;height:69px;border-radius:6px;object-fit:cover;" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')">':'<div style="width:46px;height:69px;border-radius:6px;background:'+grad(r.bookTitle)+';"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:14px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(r.bookTitle)+'</div><div style="font-size:13px;color:var(--star);margin-top:3px;">'+stars+' <span style="color:var(--text3);font-size:11px;">'+r.rating+'</span></div>'+(r.review?'<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(r.review)+'</div>':'')+'<div style="font-size:10px;color:var(--text3);margin-top:3px;">'+dt+'</div></div></div>';
+    }).join('');
+  }
+};
+
+// ── BOOK CLUB WAITLIST ──
+window.joinWaitlist=async()=>{
+  if(!CU){openAuth();return;}
+  try{
+    await setDoc(doc(db,'bookClubWaitlist',CU.uid),{userId:CU.uid,name:CU.displayName||'',email:CU.email||'',createdAt:serverTimestamp()});
+    document.getElementById('bcWaitlistBtn').textContent='You\'re on the list!';
+    document.getElementById('bcWaitlistBtn').disabled=true;
+    document.getElementById('bcWaitlistBtn').style.opacity='0.7';
+    document.getElementById('bcWaitlistMsg').textContent='We\'ll let you know when Book Clubs launches.';
+    showToast('Added to waitlist!');
+  }catch(e){showToast('Try again');}
+};
+
+// ── REVIEW LIKE / DISLIKE ──
+window.voteReview=async(reviewDocId,vote)=>{
+  if(!CU){openAuth();return;}
+  try{
+    const voteRef=doc(db,'reviewVotes',reviewDocId+'_'+CU.uid);
+    const existing=await getDoc(voteRef);
+    let likeDelta=0,dislikeDelta=0;
+    if(existing.exists()){
+      const old=existing.data().vote;
+      if(old===vote){
+        // Undo
+        await deleteDoc(voteRef);
+        if(vote==='like')likeDelta=-1;else dislikeDelta=-1;
+      }else{
+        // Swap
+        await setDoc(voteRef,{userId:CU.uid,reviewId:reviewDocId,vote,createdAt:serverTimestamp()});
+        if(vote==='like'){likeDelta=1;dislikeDelta=-1;}
+        else{likeDelta=-1;dislikeDelta=1;}
+      }
+    }else{
+      await setDoc(voteRef,{userId:CU.uid,reviewId:reviewDocId,vote,createdAt:serverTimestamp()});
+      if(vote==='like')likeDelta=1;else dislikeDelta=1;
+    }
+    // Update review counters
+    const revRef=doc(db,'ratings',reviewDocId);
+    const revSnap=await getDoc(revRef);
+    if(revSnap.exists()){
+      const d=revSnap.data();
+      await updateDoc(revRef,{
+        likes:Math.max(0,(d.likes||0)+likeDelta),
+        dislikes:Math.max(0,(d.dislikes||0)+dislikeDelta),
+      });
+    }
+    if(currentBook)openBook(currentBook);
+  }catch(e){console.error(e);showToast('Try again');}
 };
 
 loadHome();
