@@ -418,6 +418,7 @@ img{display:block;}
       <div class="stitle" style="padding:0;margin-bottom:10px;">For you</div>
       <div id="heroWrap" style="margin-bottom:18px;"><div class="skel skel-cover" style="height:230px;border-radius:18px;"></div></div>
     </div>
+    <div style="padding:0 18px 14px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:8px;">Browse by mood</div><div id="moodThemes" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;"></div></div>
     <div style="padding:0 18px 14px;"><div onclick="SS('bookclub')" style="background:linear-gradient(135deg,rgba(93,202,165,0.12),rgba(133,183,235,0.08));border:0.5px solid rgba(93,202,165,0.3);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><div style="font-size:22px;">&#128218;</div><div style="flex:1;"><div style="font-size:13px;color:var(--text);font-weight:600;">Book Clubs <span style="font-size:9px;background:var(--tc);color:var(--tc-dark);border-radius:6px;padding:1px 6px;margin-left:4px;font-weight:700;">SOON</span></div><div style="font-size:11px;color:var(--text3);margin-top:1px;">Read and discuss with others</div></div><div style="font-size:14px;color:var(--text3);">&#8250;</div></div></div>
     <div class="stitle">Your genres</div>
     <div class="gtabs" id="genreTabs">
@@ -655,13 +656,18 @@ img{display:block;}
 
 <!-- PICK A BOOK TO RECOMMEND TO FRIEND -->
 <div class="mov" id="pickBookMov">
-  <div class="msheet">
+  <div class="msheet" style="max-height:88vh;">
     <div class="mhandle"></div>
     <button onclick="closeM('pickBookMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
     <div class="mtitle">Send a book</div>
     <div class="msub" id="pickBookSub">Pick a book to recommend</div>
     <div class="sib" style="margin:14px 0 12px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="pickBookSearch" placeholder="Search any book..." oninput="onPickBookSearch(this.value)" autocomplete="off"/></div>
-    <div id="pickBookResults" style="max-height:380px;overflow-y:auto;"></div>
+    <div id="pickBookResults" style="max-height:300px;overflow-y:auto;"></div>
+    <div id="pickBookMsgWrap" style="display:none;margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px;">
+      <div id="pickBookSelected" style="display:flex;gap:10px;align-items:center;margin-bottom:10px;background:var(--bg3);border-radius:10px;padding:10px;"></div>
+      <textarea id="pickBookMsg" placeholder="Say something about it... (optional)" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);color:var(--text);border-radius:10px;padding:10px;font-size:13px;min-height:60px;outline:none;resize:vertical;" rows="2"></textarea>
+      <button onclick="sendRecommendWithMessage()" style="width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;margin-top:10px;cursor:pointer;">Send</button>
+    </div>
   </div>
 </div>
 
@@ -672,6 +678,17 @@ img{display:block;}
     <button onclick="skipTutorial()" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Skip</button>
     <div class="mhandle"></div>
     <div id="tutContent" style="padding:20px 4px 8px;"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="mov" id="settingsMov">
+  <div class="msheet" style="max-height:88vh;">
+    <div class="mhandle"></div>
+    <button onclick="closeM('settingsMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle">Settings</div>
+    <div class="msub">Personalise your Bookmarker</div>
+    <div id="settingsContent" style="margin-top:18px;"></div>
   </div>
 </div>
 
@@ -707,6 +724,30 @@ const THEMES=[
   {id:'mystery',label:'Mystery',ic:'🔍',desc:'Secrets waiting to break',gradient:'linear-gradient(135deg,#1a1f3a,#0a0e1a)'},
   {id:'family',label:'Family',ic:'🏡',desc:'Blood and the bonds it forges',gradient:'linear-gradient(135deg,#8e4a1a,#3a1f0a)'},
 ];
+
+// ── BADGE TIER SYSTEM ──
+// Returns tier info based on number of rated books
+function getTier(ratedCount){
+  if(ratedCount>=500)return{id:'platinum',label:'Platinum',img:'badges/platinum.png',color:'#3b82f6',min:500};
+  if(ratedCount>=100)return{id:'diamond',label:'Diamond',img:'badges/diamond.png',color:'#a8e6ff',min:100};
+  if(ratedCount>=50)return{id:'gold',label:'Gold',img:'badges/gold.png',color:'#ffd700',min:50};
+  if(ratedCount>=10)return{id:'silver',label:'Silver',img:'badges/silver.png',color:'#c0c0c0',min:10};
+  return{id:'bronze',label:'Bronze',img:'badges/bronze.png',color:'#cd7f32',min:0};
+}
+const TIER_THRESHOLDS=[
+  {id:'bronze',label:'Bronze',min:0,img:'badges/bronze.png'},
+  {id:'silver',label:'Silver',min:10,img:'badges/silver.png'},
+  {id:'gold',label:'Gold',min:50,img:'badges/gold.png'},
+  {id:'diamond',label:'Diamond',min:100,img:'badges/diamond.png'},
+  {id:'platinum',label:'Platinum',min:500,img:'badges/platinum.png'},
+];
+
+// Render a small tier badge inline — used next to names everywhere
+function tierBadgeHtml(ratedCount,size){
+  const tier=getTier(ratedCount||0);
+  const px=size||16;
+  return `<img src="${tier.img}" alt="${tier.label}" title="${tier.label} reader" style="width:${px}px;height:${px}px;display:inline-block;vertical-align:middle;margin-left:4px;flex-shrink:0;">`;
+}
 
 // Map themes -> ISBNs of books (use existing books from GENRE_BOOKS where possible)
 const THEME_TO_BOOKS={
@@ -922,7 +963,7 @@ const GENRE_BOOKS={
 };
 let TC='#5DCAA5',TCD='#0a2a20';
 let currentBook=null,prevScreen='home',curRating=0,curPriv='public';
-let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[];
+let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookStore={},top5=[],recDismissed=new Set();
 // Restore saved theme + mode on first load
 (function(){
   try{
@@ -973,6 +1014,7 @@ onAuthStateChanged(auth,async u=>{
     await setDoc(doc(db,'users',u.uid),{uid:u.uid,name:u.displayName||u.email.split('@')[0],email:u.email,nameLower:(u.displayName||u.email.split('@')[0]).toLowerCase(),updatedAt:serverTimestamp()},{merge:true});
     loadWL();
     loadTop5();
+    loadRecDismissed();
     checkFriendReqs();
     if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
   }
@@ -1050,6 +1092,19 @@ async function loadTop5(){
     const snap=await getDoc(doc(db,'top5',CU.uid));
     top5=snap.exists()?(snap.data().books||[]):[];
   }catch(e){top5=[];}
+}
+
+async function loadRecDismissed(){
+  if(!CU)return;
+  try{
+    const snap=await getDoc(doc(db,'recDismiss',CU.uid));
+    recDismissed=new Set(snap.exists()?(snap.data().bookIds||[]):[]);
+  }catch(e){recDismissed=new Set();}
+}
+async function dismissRec(isbn){
+  if(!CU||!isbn)return;
+  recDismissed.add(isbn);
+  try{await setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:Array.from(recDismissed),updatedAt:serverTimestamp()});}catch(e){}
 }
 
 async function saveTop5(){
@@ -1235,6 +1290,9 @@ window.doSave=async()=>{
 // ── BOOK PAGE ──
 window._storeBook=(key,book)=>{_bookStore[key]=book;};
 window.openBook=async book=>{
+  // If this book was in recommendations, dismiss it from the row
+  if(CU&&book.isbn&&!recDismissed.has(book.isbn)){dismissRec(book.isbn);}
+
   currentBook=book;SS('book');updWLBtn();
   // Show page immediately with what we have
   const cov=book.cover?`<img class="bkcov" src="${book.cover}" onerror="this.style.background='${grad(book.title)}';this.removeAttribute('src')" alt="${esc(book.title)}">`:`<div class="bkcov" style="background:${grad(book.title)};"></div>`;
@@ -1541,7 +1599,7 @@ window.viewFriendProfile=async(uid,name,ratingCount)=>{
     el.innerHTML=
       `<div style="text-align:center;padding:10px 0 20px;">
         <div style="width:64px;height:64px;border-radius:50%;background:${c.bg};border:2px solid ${c.fg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:${c.fg};margin:0 auto 10px;">${ini(name)}</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px;">${esc(name)}</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:6px;">${esc(name)} ${tierBadgeHtml(ratings.length,22)}</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Bookmarker member</div>
         <div style="display:flex;gap:10px;justify-content:center;">
           <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:10px 18px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text);">${ratings.length}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rated</div></div>
@@ -1630,6 +1688,12 @@ async function loadHome(){
     }catch(e){/* NYT unavailable — keep hardcoded hero */}
   },100);
 
+  // Populate "Browse by mood" themes row
+  const moodEl=document.getElementById('moodThemes');
+  if(moodEl){
+    moodEl.innerHTML=THEMES.map(t=>'<div onclick="openTheme(\''+t.id+'\')" style="flex-shrink:0;background:'+t.gradient+';border-radius:12px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:transform 0.15s;" onmousedown="this.style.transform=\'scale(0.96)\'" onmouseup="this.style.transform=\'\'"><span style="font-size:14px;">'+t.ic+'</span><span style="font-size:11px;color:#fff;font-weight:600;">'+t.label+'</span></div>').join('');
+  }
+
   // Build recommendations row if user is signed in
   if(CU){
     buildRecommendations().then(recs=>{
@@ -1713,11 +1777,12 @@ async function renderFriends(){
         incoming.forEach((r,i)=>{
           const key='inc'+i+'_'+Date.now();
           _bookStore[key]={title:r.bookTitle,authors:[r.bookAuthor||''],author:r.bookAuthor||'',isbn:r.bookId||'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',previewLink:''};
-          html+='<div style="display:flex;gap:12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" style="width:46px;height:69px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')">':'<div style="width:46px;height:69px;border-radius:6px;background:'+grad(r.bookTitle)+';flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:600;">'+esc(r.bookTitle)+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">'+esc(r.bookAuthor||'')+'</div><div style="font-size:11px;color:var(--tc);margin-top:5px;">'+esc(r.fromName)+' recommended this</div></div></div>';
+          const msgHtml=r.message?'<div style="font-size:11px;color:var(--text2);margin-top:6px;font-style:italic;background:rgba(93,202,165,0.06);border-left:2px solid var(--tc);padding:5px 8px;border-radius:0 6px 6px 0;">&#8220;'+esc(r.message)+'&#8221;</div>':'';
+          html+='<div style="display:flex;gap:12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" style="width:46px;height:69px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')">':'<div style="width:46px;height:69px;border-radius:6px;background:'+grad(r.bookTitle)+';flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:600;">'+esc(r.bookTitle)+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">'+esc(r.bookAuthor||'')+'</div><div style="font-size:11px;color:var(--tc);margin-top:5px;">'+esc(r.fromName)+' recommended this</div>'+msgHtml+'</div></div>';
         });
         html+='</div>';
       }
-      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname">${esc(myName)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div>${myT5Html}</div></div></div>`;
+      html+=`<div style="padding:14px 18px 4px;"><div class="stitle" style="padding:0;margin-bottom:10px;">Your activity</div><div class="frbanner" style="margin-bottom:14px;border-radius:14px;border:0.5px solid var(--border);"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${TC};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:#85B7EB;"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(myName)}</div><div><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(myName)} ${tierBadgeHtml(myAllRatings.size,18)} <span style="font-size:10px;color:var(--tc);font-style:normal;">&#8226; You</span></div><div class="frsub">${myAllRatings.size} books rated</div>${myRecentHtml}</div></div>${myT5Html}</div></div></div>`;
     }catch(e){}
 
     // Pending requests section
@@ -1753,7 +1818,7 @@ async function renderFriends(){
           let recentHtml='';
           if(!rsnap.empty){const r=rsnap.docs[0].data();recentHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);">Just rated: ${esc(r.bookTitle)} &#8213; ${r.rating}&#9733;</div>`;}
           _bookStore['friend_'+fid]={uid:fid,name:fd.name,ratingCount:rc.size,c};
-          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div><div class="frname">${esc(fd.name)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><button onclick="event.stopPropagation();openPickBookForFriend('${fid}','${esc(fd.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128172; Recommend</button><div style="font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div>${friendT5Html}</div></div>`;
+          html+=`<div class="frbanner" style="cursor:pointer;" onclick="viewFriendProfile('${fid}','${esc(fd.name)}',${rc.size})"><div class="frblob" style="width:150px;height:150px;top:-35px;left:-25px;background:${c.fg};"></div><div class="frblob" style="width:110px;height:110px;top:10px;right:-15px;background:${TC};"></div><div class="frinner"><div class="frow"><div class="frav" style="background:${c.bg};color:${c.fg};">${ini(fd.name)}</div><div style="flex:1;min-width:0;"><div class="frname" style="display:flex;align-items:center;gap:6px;">${esc(fd.name)} ${tierBadgeHtml(rc.size,18)}</div><div class="frsub">${rc.size} books rated</div>${recentHtml}</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><button onclick="event.stopPropagation();openPickBookForFriend('${fid}','${esc(fd.name)}')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128172; Recommend</button><div style="font-size:11px;color:rgba(255,255,255,0.4);">View &#8594;</div></div></div>${friendT5Html}</div></div>`;
         }catch(e){}
       }
     }
@@ -1849,7 +1914,19 @@ async function renderProfile(){
     {ic:'&#127942;',n:'100 books',d:'100 or more books rated',c:'rl',l:'Legendary',ok:myR.length>=100},
   ];
   const achH=achs.map(a=>`<div class="achcard${a.ok?'':' locked'}" onclick="openAch('${a.ic}','${a.n}','${a.d}','${a.c}','${a.l}')"><div class="achcard-icon">${a.ic}</div><div class="achcard-name">${a.n}</div><span class="rarity ${a.c}">${a.l}</span></div>`).join('');
-  const wlH=wl.length===0?`<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>`:wl.map(w=>`<div class="wlitem" onclick='openBook({title:"${esc(w.title)}",authors:${JSON.stringify(w.authors||[])},rating:0,ratingCount:"",cover:"${w.cover||''}",description:"",categories:[],publishedDate:"",isbn:"${w.isbn||''}",previewLink:""})'>${w.cover?`<img class="wlcov" src="${w.cover}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')" alt="">`:'<div class="wlcov"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;">${esc(w.title)}</div><div style="font-size:11px;color:var(--text3);">${esc((w.authors||[]).join(', '))}</div></div><button class="wlrm" onclick="event.stopPropagation();removeWL('${w.bookId}')">&#x2715;</button></div>`).join('');
+  let wlH='';
+  if(wl.length===0){
+    wlH='<div style="font-size:13px;color:var(--text3);padding:10px 0;">No books yet &#8212; tap &#128278; on any book to add one</div>';
+  }else{
+    wlH='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">';
+    wl.forEach((w,i)=>{
+      const key='wlc'+i+'_'+Date.now();
+      _bookStore[key]={title:w.title,authors:w.authors||[''],author:(w.authors||[''])[0]||'',isbn:w.isbn||w.bookId||'',cover:w.cover||'',description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+      const safe=(w.bookId||'').replace(/'/g,"\\'");
+      wlH+='<div style="flex-shrink:0;width:100px;cursor:pointer;position:relative;" onclick="_ob(\''+key+'\')">'+(w.cover?'<img src="'+w.cover+'" onerror="this.style.background=\''+grad(w.title)+'\';this.removeAttribute(\'src\')" style="width:100px;height:150px;border-radius:9px;object-fit:cover;display:block;margin-bottom:6px;">':'<div style="width:100px;height:150px;border-radius:9px;background:'+grad(w.title)+';margin-bottom:6px;"></div>')+'<button onclick="event.stopPropagation();removeWL(\''+safe+'\')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:11px;cursor:pointer;">&#x2715;</button><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(w.title)+'</div></div>';
+    });
+    wlH+='</div>';
+  }
   // Build Top 5 HTML using safe string concat (no nested template literals)
   let t5Html="<div style=\"padding:18px;border-bottom:0.5px solid var(--border);\" class=\"anim-fade-up\"><div class=\"stitle\" style=\"padding:0;margin-bottom:12px;\">Top 5 Books</div><div class=\"t5row\">";
   for(let i=0;i<5;i++){
@@ -1864,9 +1941,20 @@ async function renderProfile(){
     }
   }
   t5Html+="</div></div>";
-  const recH=myR.length===0?`<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>`:myR.slice(0,12).map((r,i)=>{let st='';for(let j=0;j<Math.round(r.rating);j++)st+='&#9733;';return`<div class="anim-fade-up" style="animation-delay:${i*0.03}s;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;" onclick='openBook({title:"${r.bookTitle.replace(/"/g,'&quot;').replace(/'/g,"\\'")}",authors:[""],rating:${r.rating},ratingCount:"",cover:"${r.bookCover||''}",description:"",categories:[],publishedDate:"",isbn:"${r.bookId||''}",previewLink:""})'>${r.bookCover?`<img src="${r.bookCover}" style="width:36px;height:54px;border-radius:5px;object-fit:cover;" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">`:'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>'}<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.bookTitle)}</div><div style="color:var(--star);font-size:12px;">${st} <span style="color:var(--text3);font-size:11px;">${r.rating}</span></div>${r.review?`<div style="font-size:11px;color:var(--text3);margin-top:1px;">${esc(r.review.substring(0,55))}${r.review.length>55?'...':''}</div>`:''}</div></div>`;}).join('');
+  let recH='';
+  if(myR.length===0){
+    recH='<div style="font-size:13px;color:var(--text3);">Rate your first book to see it here</div>';
+  }else{
+    recH='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">';
+    myR.slice(0,15).forEach((r,i)=>{
+      const key='rrc'+i+'_'+Date.now();
+      _bookStore[key]={title:r.bookTitle,authors:[''],author:'',isbn:r.bookId||'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+      recH+='<div style="flex-shrink:0;width:100px;cursor:pointer;position:relative;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')" style="width:100px;height:150px;border-radius:9px;object-fit:cover;display:block;margin-bottom:6px;">':'<div style="width:100px;height:150px;border-radius:9px;background:'+grad(r.bookTitle)+';margin-bottom:6px;"></div>')+'<div style="position:absolute;bottom:62px;right:5px;background:rgba(0,0,0,0.75);border-radius:7px;padding:2px 7px;font-size:11px;font-weight:700;color:var(--star);">&#9733; '+r.rating+'</div><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(r.bookTitle)+'</div></div>';
+    });
+    recH+='</div>';
+  }
   el.innerHTML=
-    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><button onclick="shareProfile()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Share profile"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;">${esc(name)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
+    `<div class="prhero"><div class="prblob" id="prB1" style="width:200px;height:200px;top:-60px;left:-50px;background:${TC};"></div><div class="prblob" style="width:160px;height:160px;top:20px;right:-40px;background:#85B7EB;"></div><div class="prblob" style="width:120px;height:120px;bottom:-20px;left:80px;background:#ED93B1;"></div><button onclick="openSettings()" style="position:absolute;top:14px;right:62px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Settings"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button><button onclick="shareProfile()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;backdrop-filter:blur(10px);" title="Share profile"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button><div class="prinner"><div class="prav anim-pop">${ini(name)}</div><div class="prname anim-fade-up" style="animation-delay:0.05s;display:flex;align-items:center;justify-content:center;gap:6px;">${esc(name)} ${tierBadgeHtml(myR.length,24)}</div><div class="prjoin anim-fade-up" style="animation-delay:0.08s;">Bookmarker member</div><div class="cdots anim-fade-up" style="animation-delay:0.1s;"><div class="cdot on" style="background:#5DCAA5;" onclick="setTheme('#5DCAA5')"></div><div class="cdot" style="background:#e8c84a;" onclick="setTheme('#e8c84a')"></div><div class="cdot" style="background:#85B7EB;" onclick="setTheme('#85B7EB')"></div><div class="cdot" style="background:#ED93B1;" onclick="setTheme('#ED93B1')"></div><div class="cdot" style="background:#AFA9EC;" onclick="setTheme('#AFA9EC')"></div><div class="cdot" style="background:#F4A261;" onclick="setTheme('#F4A261')"></div><div class="cdot" style="background:#06B6A0;" onclick="setTheme('#06B6A0')"></div></div><div style="display:flex;justify-content:center;margin-bottom:14px;"><button id="modeToggle" class="mode-toggle-btn" onclick="toggleMode()" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);border-radius:14px;padding:5px 12px;font-size:11px;cursor:pointer;transition:transform 0.15s;">${document.documentElement.classList.contains('light')?'&#9789; Dark mode':'&#9728; Light mode'}</button></div><div class="prstats anim-fade-up" style="animation-delay:0.12s;"><div class="prstat" style="cursor:pointer;" onclick="SS('collection')"><div class="prstatn">${myR.length}</div><div class="prstatl">Rated &#8250;</div></div><div class="prstat"><div class="prstatn">${revC}</div><div class="prstatl">Reviews</div></div><div class="prstat"><div class="prstatn">${wl.length}</div><div class="prstatl">Wishlist</div></div></div></div></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:14px;">Your ratings</div><div class="histouter"><span style="font-size:18px;flex-shrink:0;margin-bottom:16px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:16px;font-size:16px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div></div>`+
     t5Html+`<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"></div>`+
     `<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="stitle" style="padding:0;margin-bottom:0;">Achievements</div><span style="font-size:10px;color:var(--text3);">Swipe &#8594;</span></div><div class="achscroll">${achH}</div></div>`+
@@ -2173,12 +2261,12 @@ async function buildRecommendations(){
       });
     });
     const topThemes=Object.entries(themeCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(t=>t[0]);
-    // Get books from those themes that user hasn't rated
-    const ratedIsbns=new Set(ratings.map(r=>r.bookId));
+    // Filter: rated + wishlisted + dismissed
+    const skipIsbns=new Set([...ratings.map(r=>r.bookId),...wl.map(w=>w.bookId||w.isbn),...recDismissed]);
     const recs=[];
     topThemes.forEach(tid=>{
       THEME_TO_BOOKS[tid].forEach(isbn=>{
-        if(ratedIsbns.has(isbn))return;
+        if(skipIsbns.has(isbn))return;
         Object.values(GENRE_BOOKS).forEach(list=>{
           const found=list.find(b=>b.isbn===isbn);
           if(found&&!recs.find(r=>r.isbn===isbn))recs.push(found);
@@ -2329,9 +2417,23 @@ function renderPickResultsHtml(books){
     return '<div onclick="confirmRecommend(\''+key+'\')" style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">'+(b.cover?'<img src="'+b.cover+'" style="width:36px;height:54px;border-radius:5px;object-fit:cover;flex-shrink:0;">':'<div style="width:36px;height:54px;border-radius:5px;background:var(--bg3);flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:500;">'+esc(b.title)+'</div><div style="font-size:11px;color:var(--text3);">'+esc(b.author||'')+'</div></div><div style="font-size:18px;color:var(--tc);">&#8594;</div></div>';
   }).join('');
 }
-window.confirmRecommend=async key=>{
+let _recSelectedBookKey=null;
+window.confirmRecommend=key=>{
   const book=_bookStore[key];
   if(!book||!_recTargetId)return;
+  _recSelectedBookKey=key;
+  // Show selected book preview + reveal message field
+  const sel=document.getElementById('pickBookSelected');
+  sel.innerHTML=(book.cover?'<img src="'+book.cover+'" style="width:34px;height:51px;border-radius:5px;object-fit:cover;">':'<div style="width:34px;height:51px;border-radius:5px;background:var(--bg3);"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Recommending</div><div style="font-size:13px;color:var(--text);font-weight:600;">'+esc(book.title)+'</div></div>';
+  document.getElementById('pickBookMsgWrap').style.display='block';
+  // Scroll the modal to show the message field
+  setTimeout(()=>document.getElementById('pickBookMsg').focus(),200);
+};
+
+window.sendRecommendWithMessage=async()=>{
+  const book=_bookStore[_recSelectedBookKey];
+  if(!book||!_recTargetId)return;
+  const msg=document.getElementById('pickBookMsg').value.trim();
   try{
     const docId=CU.uid+'_'+_recTargetId+'_'+(book.isbn||book.title.substring(0,30));
     await setDoc(doc(db,'recommendations',docId),{
@@ -2339,9 +2441,12 @@ window.confirmRecommend=async key=>{
       toId:_recTargetId,toName:_recTargetName,
       bookId:book.isbn||book.title.substring(0,30),
       bookTitle:book.title,bookCover:book.cover||'',bookAuthor:book.author||'',
+      message:msg,
       createdAt:serverTimestamp(),seen:false,
     });
     closeM('pickBookMov');
+    document.getElementById('pickBookMsgWrap').style.display='none';
+    document.getElementById('pickBookMsg').value='';
     showToast('Sent to '+_recTargetName+'!');
   }catch(e){console.error(e);showToast('Try again');}
 };
@@ -2398,6 +2503,40 @@ setTimeout(()=>{
     }
   }catch(e){}
 },1200);
+
+// ─────────────────────────────────────────────
+// SETTINGS MENU
+// ─────────────────────────────────────────────
+window.openSettings=()=>{
+  const isLight=document.documentElement.classList.contains('light');
+  const colours=[
+    {hex:'#5DCAA5',name:'Mint'},{hex:'#e8c84a',name:'Gold'},{hex:'#85B7EB',name:'Sky'},
+    {hex:'#ED93B1',name:'Rose'},{hex:'#AFA9EC',name:'Lavender'},{hex:'#F4A261',name:'Orange'},
+    {hex:'#06B6A0',name:'Teal'},
+  ];
+  const currentTC=getComputedStyle(document.documentElement).getPropertyValue('--tc').trim();
+  const colourHtml=colours.map(c=>{
+    const isOn=c.hex.toLowerCase()===currentTC.toLowerCase();
+    return '<div onclick="setTheme(\''+c.hex+'\');openSettings()" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;'+(isOn?'background:rgba(93,202,165,0.08);':'')+'"><div style="width:24px;height:24px;border-radius:50%;background:'+c.hex+';border:'+(isOn?'2px solid var(--text)':'2px solid transparent')+';"></div><div style="flex:1;font-size:13px;color:var(--text);">'+c.name+'</div>'+(isOn?'<div style="font-size:11px;color:var(--tc);">&#10003; Active</div>':'')+'</div>';
+  }).join('');
+
+  const html=`
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;padding:0 4px 4px;">Appearance</div>
+      <div style="background:var(--bg3);border-radius:12px;padding:4px;display:flex;gap:4px;">
+        <button onclick="if(document.documentElement.classList.contains('light'))toggleMode();openSettings()" style="flex:1;background:${isLight?'transparent':'var(--bg)'};color:${isLight?'var(--text3)':'var(--text)'};border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">&#9728; Dark</button>
+        <button onclick="if(!document.documentElement.classList.contains('light'))toggleMode();openSettings()" style="flex:1;background:${isLight?'var(--bg)':'transparent'};color:${isLight?'var(--text)':'var(--text3)'};border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">&#9789; Light</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;padding:14px 4px 4px;">Accent colour</div>
+      ${colourHtml}
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;padding:14px 4px 4px;">Account</div>
+      <button onclick="closeM('settingsMov');openTutorial()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#10067; Show tutorial again<span style="color:var(--text3);">&#8250;</span></button>
+      <button onclick="closeM('settingsMov');shareProfile()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128279; Share my profile<span style="color:var(--text3);">&#8250;</span></button>
+      <button onclick="if(confirm('Clear recommendation history?')){recDismissed=new Set();if(CU)setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:[],updatedAt:serverTimestamp()});showToast('Recommendations reset');closeM('settingsMov');}" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128260; Reset recommendations<span style="color:var(--text3);">&#8250;</span></button>
+    </div>`;
+  document.getElementById('settingsContent').innerHTML=html;
+  document.getElementById('settingsMov').classList.add('open');
+};
 
 loadHome();
 </script>
