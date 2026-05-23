@@ -1145,6 +1145,45 @@ async function saveReading(){
   try{await setDoc(doc(db,'currentlyReading',CU.uid),{userId:CU.uid,books:reading,updatedAt:serverTimestamp()});}catch(e){console.error('Save reading error',e);}
 }
 
+window.finishReadingBook=async idx=>{
+  const b=reading[idx];
+  if(!b)return;
+  // Remove from currently reading
+  reading.splice(idx,1);
+  await saveReading();
+  // Set up currentBook for rate modal + open the book page
+  const bookForPage={title:b.title,authors:[b.author||''],author:b.author||'',isbn:b.isbn||'',cover:b.cover||'',description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
+  showToast('Finished! Rate it now');
+  openBook(bookForPage);
+  // After a short delay open the rate modal automatically
+  setTimeout(()=>{if(window.openRate)openRate();},700);
+};
+
+window.addCurrentBookToReading=async()=>{
+  if(!CU){openAuth();return;}
+  if(!currentBook){showToast('Open a book first');return;}
+  // Check if already in reading
+  if(reading.find(b=>b&&(b.isbn===currentBook.isbn||b.title===currentBook.title))){
+    showToast('Already in currently reading');
+    return;
+  }
+  if(reading.length>=2){
+    showToast('Currently reading is full — finish one first');
+    return;
+  }
+  reading.push({
+    title:currentBook.title,
+    author:(currentBook.authors||[''])[0]||'',
+    isbn:currentBook.isbn||'',
+    cover:currentBook.cover||'',
+  });
+  await saveReading();
+  showToast('Added to currently reading!');
+  // Update the button on the book page
+  const btn=document.getElementById('crBookBtn');
+  if(btn){btn.innerHTML='&#10003; In your currently reading';btn.style.background='var(--tc)';btn.style.color='var(--tc-dark)';}
+};
+
 window.openReadingPicker=slotIdx=>{
   if(!CU){openAuth();return;}
   document.getElementById('readingPickerIdx').value=slotIdx;
@@ -1494,6 +1533,7 @@ function _renderBP(book,avg,cnt,cov,revHtml){
   }
   const catPills=(book.categories||[]).slice(0,3).map(c=>`<div class="tpill">${esc(c)}</div>`).join('');
   theme=(theme+catPills)||'<div class="tpill">Fiction</div>';
+  const isInReading=reading.find(b=>b&&((book.isbn&&b.isbn===book.isbn)||b.title===book.title))?true:false;
   const buy=book.previewLink||`https://www.google.com/search?q=${encodeURIComponent(book.title+' '+((book.authors||[])[0]||'')+' book')}`;
   const won=inWL(book);
   document.getElementById('bookContent').innerHTML=
@@ -1501,7 +1541,7 @@ function _renderBP(book,avg,cnt,cov,revHtml){
     `<div class="bsec anim-fade-up" style="animation-delay:0.05s;"><div class="bsec-t">Summary<span class="aipill">AI</span></div><div class="sumtext">${esc((book.description||'').substring(0,340))||'<span style="color:var(--text3);">Loading description...</span>'}</div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.1s;"><div class="bsec-t">Themes</div><div class="tpills">${theme}</div></div>`+
     _authorSectionHtml(book)+
-    `<div class="bsec anim-fade-up" style="animation-delay:0.14s;padding:0;border:none;"><div style="padding:0 18px 18px;"><button onclick="openRecommendModal()" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);color:var(--text);border-radius:14px;padding:13px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:transform 0.15s,background 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><span style="font-size:16px;">&#128172;</span> Recommend to a friend</button></div></div>`+
+    `<div class="bsec anim-fade-up" style="animation-delay:0.14s;padding:0;border:none;"><div style="padding:0 18px 18px;display:flex;flex-direction:column;gap:8px;"><button id="crBookBtn" onclick="addCurrentBookToReading()" style="width:100%;background:${isInReading?'var(--tc)':'var(--bg3)'};border:0.5px solid var(--border);color:${isInReading?'var(--tc-dark)':'var(--text)'};border-radius:14px;padding:13px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:transform 0.15s,background 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><span style="font-size:16px;">&#128214;</span> ${isInReading?'&#10003; In your currently reading':'I\'m reading this'}</button><button onclick="openRecommendModal()" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);color:var(--text);border-radius:14px;padding:13px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:transform 0.15s,background 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''"><span style="font-size:16px;">&#128172;</span> Recommend to a friend</button></div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.12s;"><div class="bsec-t">Tone</div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#5DCAA5;">Light</span><span class="tone-lbl" style="color:#555;font-size:11px;">Dark</span></div><div class="tone-tr"><div class="tone-f" style="width:35%;background:linear-gradient(90deg,#5DCAA5,#1D9E75);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#85B7EB;">Slow</span><span class="tone-lbl" style="color:#555;font-size:11px;">Fast</span></div><div class="tone-tr"><div class="tone-f" style="width:55%;background:linear-gradient(90deg,#85B7EB,#378ADD);"></div></div></div><div class="tone-item"><div class="tone-hdr"><span class="tone-lbl" style="color:#e8c84a;">Uplifting</span><span class="tone-lbl" style="color:#555;font-size:11px;">Heavy</span></div><div class="tone-tr"><div class="tone-f" style="width:62%;background:linear-gradient(90deg,#e8c84a,#BA7517);"></div></div></div></div>`+
     `<div class="bsec anim-fade-up" style="animation-delay:0.15s;"><div class="bsec-t">Reviews${cnt?` (${cnt.toLocaleString()})`:''}</div><div id="revList">${revHtml}</div></div>`+
     `<div style="height:80px;"></div>`;
@@ -2080,20 +2120,32 @@ async function renderProfile(){
     wlH+='</div>';
   }
   // Build Top 5 HTML using safe string concat (no nested template literals)
-  // Build Currently Reading section
-  let crHtml='<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span>&#128214; Currently reading</span></div><div style="display:flex;gap:12px;">';
-  for(let i=0;i<2;i++){
-    const b=reading[i];
-    if(b){
-      const key='cro_'+i+'_'+Date.now();
-      _bookStore[key]={title:b.title,authors:[b.author||''],author:b.author||'',isbn:b.isbn||'',cover:b.cover||'',description:'',categories:[],publishedDate:'',previewLink:''};
-      const img=b.cover?'<img src="'+b.cover+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.background=\''+grad(b.title)+'\';this.removeAttribute(\'src\')">':'<div style="width:100%;height:100%;background:'+grad(b.title)+';"></div>';
-      crHtml+='<div style="flex:1;min-width:0;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;position:relative;cursor:pointer;" onclick="_ob(&quot;'+key+'&quot;)"><div style="aspect-ratio:2/3;position:relative;">'+img+'<button onclick="event.stopPropagation();removeFromReading('+i+')" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;border:none;width:24px;height:24px;border-radius:50%;font-size:12px;cursor:pointer;z-index:2;">&times;</button></div><div style="padding:10px 12px;"><div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:3px;">'+esc(b.title)+'</div><div style="font-size:11px;color:var(--text3);">'+esc(b.author||'')+'</div></div></div>';
-    }else{
-      crHtml+='<div onclick="openReadingPicker('+i+')" style="flex:1;min-width:0;background:var(--bg2);border:1.5px dashed rgba(255,255,255,0.1);border-radius:14px;aspect-ratio:2/3.2;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'\'"><div style="font-size:32px;color:var(--text3);font-weight:200;margin-bottom:6px;">+</div><div style="font-size:11px;color:var(--text3);text-align:center;padding:0 8px;">Add a book you\'re reading</div></div>';
-    }
+  // Build Currently Reading section (adaptive: 0 books = thin bar, 1 book = big card + add slot, 2 books = side-by-side)
+  const readingFiltered=reading.filter(b=>b);
+  let crHtml='<div style="padding:18px;border-bottom:0.5px solid var(--border);" class="anim-fade-up"><div class="stitle" style="padding:0;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span>&#128214; Currently reading</span></div>';
+
+  function bigBookCard(b,idx){
+    const key='cro_'+idx+'_'+Date.now();
+    _bookStore[key]={title:b.title,authors:[b.author||''],author:b.author||'',isbn:b.isbn||'',cover:b.cover||'',description:'',categories:[],publishedDate:'',previewLink:''};
+    const img=b.cover?'<img src="'+b.cover+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.background=\''+grad(b.title)+'\';this.removeAttribute(\'src\')">':'<div style="width:100%;height:100%;background:'+grad(b.title)+';"></div>';
+    return '<div style="flex:1;min-width:0;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;position:relative;"><div onclick="_ob(&quot;'+key+'&quot;)" style="cursor:pointer;"><div style="aspect-ratio:2/3;position:relative;">'+img+'<button onclick="event.stopPropagation();removeFromReading('+idx+')" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;border:none;width:24px;height:24px;border-radius:50%;font-size:12px;cursor:pointer;z-index:2;">&times;</button></div><div style="padding:10px 12px;"><div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:3px;">'+esc(b.title)+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px;">'+esc(b.author||'')+'</div></div></div><div style="padding:0 12px 12px;"><button onclick="finishReadingBook('+idx+')" style="width:100%;background:var(--tc);color:var(--tc-dark);border:none;border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;">&#10003; Mark as finished</button></div></div>';
   }
-  crHtml+='</div></div>';
+
+  function smallAddSlot(idx){
+    return '<div onclick="openReadingPicker('+idx+')" style="flex:1;min-width:0;background:var(--bg2);border:1.5px dashed rgba(255,255,255,0.1);border-radius:14px;aspect-ratio:2/3.4;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'\'"><div style="font-size:32px;color:var(--text3);font-weight:200;margin-bottom:6px;">+</div><div style="font-size:11px;color:var(--text3);text-align:center;padding:0 8px;">Add a book you\'re reading</div></div>';
+  }
+
+  if(readingFiltered.length===0){
+    // Just a thin add bar
+    crHtml+='<div onclick="openReadingPicker(0)" style="background:var(--bg2);border:1.5px dashed rgba(255,255,255,0.12);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform 0.15s;" onmousedown="this.style.transform=\'scale(0.99)\'" onmouseup="this.style.transform=\'\'"><div style="font-size:22px;">&#128214;</div><div style="flex:1;font-size:13px;color:var(--text2);">Add a book you\'re reading</div><div style="font-size:20px;color:var(--text3);font-weight:200;">+</div></div>';
+  }else if(readingFiltered.length===1){
+    // Big single book + small add slot underneath
+    crHtml+='<div style="display:flex;flex-direction:column;gap:12px;"><div style="display:flex;">'+bigBookCard(readingFiltered[0],0)+'</div>'+smallAddSlot(1)+'</div>';
+  }else{
+    // Two books side by side
+    crHtml+='<div style="display:flex;gap:12px;">'+bigBookCard(readingFiltered[0],0)+bigBookCard(readingFiltered[1],1)+'</div>';
+  }
+  crHtml+='</div>';
 
   let t5Html="<div style=\"padding:18px;border-bottom:0.5px solid var(--border);\" class=\"anim-fade-up\"><div class=\"stitle\" style=\"padding:0;margin-bottom:12px;\">Top 5 Books</div><div class=\"t5row\">";
   for(let i=0;i<5;i++){
