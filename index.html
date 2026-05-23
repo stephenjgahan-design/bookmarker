@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -465,11 +464,29 @@ img{display:block;}
 <div class="screen" id="S-friends">
   <div class="tbar">
     <div class="logo">book<em>marker</em></div>
-    <button onclick="openAddFriend()" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:7px 12px;color:var(--tc);font-size:12px;font-weight:600;position:relative;transition:background 0.15s;">
-      + Add friend
-    </button>
+    <button onclick="openAddFriend()" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:7px 12px;color:var(--tc);font-size:12px;font-weight:600;position:relative;transition:background 0.15s;">+ Add friend</button>
+  </div>
+  <div style="display:flex;border-bottom:0.5px solid var(--border);padding:0 18px;">
+    <button id="frTab-friends" onclick="switchFriendsTab('friends')" style="flex:1;background:none;border:none;border-bottom:2px solid var(--tc);padding:10px 0;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:color 0.2s;">Friends</button>
+    <button id="frTab-tables" onclick="switchFriendsTab('tables')" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 0;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:color 0.2s;">Tables</button>
   </div>
   <div class="sa" id="friendsContent"><div class="lmsg"><div class="spin"></div>Loading friends...</div></div>
+  <div class="sa" id="tablesContent" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:50px 24px;min-height:60vh;">
+    <div style="position:relative;width:100%;max-width:340px;text-align:center;" class="anim-fade-up">
+      <div style="position:absolute;width:180px;height:180px;background:var(--tc);border-radius:50%;filter:blur(80px);opacity:0.2;top:0;left:50%;transform:translateX(-50%);z-index:0;"></div>
+      <div style="position:relative;z-index:1;">
+        <div style="display:inline-block;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:20px;padding:5px 14px;color:var(--tc);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">Coming Soon</div>
+        <div style="font-size:56px;margin-bottom:16px;">&#127942;</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);line-height:1.2;margin-bottom:12px;">Tables</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px;">Compare your reading stats with friends. See who's read the most, who rates hardest, and who shares your taste.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left;">
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128202;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Friend leaderboards</div><div style="font-size:11px;color:var(--text3);">Who's read the most this month?</div></div></div>
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#129309;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Taste matching</div><div style="font-size:11px;color:var(--text3);">See how similar your ratings are</div></div></div>
+          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128200;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Reading streaks</div><div style="font-size:11px;color:var(--text3);">Track your reading momentum</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- PROFILE -->
@@ -1741,6 +1758,9 @@ window.viewFriendProfile=async(uid,name,ratingCount)=>{
           <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:10px 18px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text);">${revCount}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Reviews</div></div>
         </div>
       </div>
+      <div style="padding:0 0 14px;display:flex;gap:8px;">
+        <button onclick="closeM('friendProfileMov');setTimeout(()=>SS('bookclub'),200);" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:11px;color:var(--tc);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;">&#128218; Read Together</button>
+      </div>
       <div style="border-top:0.5px solid var(--border);padding:14px 0;">
         <div class="stitle" style="padding:0;margin-bottom:12px;">Their ratings</div>
         <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;"><span style="font-size:16px;flex-shrink:0;margin-bottom:14px;color:${TC};">&#9733;</span><div class="histbars">${histH}</div><div style="display:flex;gap:1px;flex-shrink:0;margin-bottom:14px;font-size:14px;color:${TC};"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div></div>
@@ -1760,7 +1780,7 @@ window.viewFriendProfile=async(uid,name,ratingCount)=>{
           if(sec){
             sec.innerHTML='<div style="border-top:0.5px solid var(--border);padding:14px 0;"><div class="stitle" style="padding:0;margin-bottom:12px;">&#128214; Currently reading</div><div style="display:flex;gap:10px;">'+fbooks.map((b,i)=>{
               const fkey='fcr_'+i;_bookStore[fkey]={title:b.title,authors:[b.author||''],author:b.author||'',isbn:b.isbn||'',cover:b.cover||'',description:'',categories:[],publishedDate:'',previewLink:''};
-              return '<div onclick="closeM(\'friendProfileMov\');setTimeout(()=>_ob(\''+fkey+'\'),200);" style="flex:1;min-width:0;background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;"><div style="aspect-ratio:2/3;">'+(b.cover?'<img src="'+b.cover+'" style="width:100%;height:100%;object-fit:cover;display:block;">':'<div style="width:100%;height:100%;background:'+grad(b.title)+';"></div>')+'</div><div style="padding:8px;"><div style="font-size:11px;color:var(--text);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(b.title)+'</div></div></div>';
+              return '<div onclick="closeM(\'friendProfileMov\');setTimeout(()=>_ob(\''+fkey+'\'),200);" style="flex-shrink:0;width:90px;background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;"><div style="aspect-ratio:2/3;">'+(b.cover?'<img src="'+b.cover+'" style="width:100%;height:100%;object-fit:cover;display:block;">':'<div style="width:100%;height:100%;background:'+grad(b.title)+';"></div>')+'</div><div style="padding:6px;"><div style="font-size:10px;color:var(--text);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+esc(b.title)+'</div></div></div>';
             }).join('')+'</div></div>';
           }
         }
@@ -1862,6 +1882,25 @@ async function loadHome(){
     });
   }
 }
+
+// ── FRIENDS TAB SWITCHER ──
+window.switchFriendsTab=function(tab){
+  const fc=document.getElementById('friendsContent');
+  const tc=document.getElementById('tablesContent');
+  const ftb=document.getElementById('frTab-friends');
+  const ttb=document.getElementById('frTab-tables');
+  if(tab==='tables'){
+    fc.style.display='none';
+    tc.style.display='flex';
+    ftb.style.borderBottomColor='transparent';ftb.style.color='var(--text3)';ftb.style.fontWeight='500';
+    ttb.style.borderBottomColor='var(--tc)';ttb.style.color='var(--text)';ttb.style.fontWeight='600';
+  }else{
+    fc.style.display='';
+    tc.style.display='none';
+    ftb.style.borderBottomColor='var(--tc)';ftb.style.color='var(--text)';ftb.style.fontWeight='600';
+    ttb.style.borderBottomColor='transparent';ttb.style.color='var(--text3)';ttb.style.fontWeight='500';
+  }
+};
 
 // ── FRIENDS SYSTEM ──
 async function checkFriendReqs(){
