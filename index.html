@@ -692,6 +692,17 @@ img{display:block;}
   </div>
 </div>
 
+<!-- GOODREADS IMPORT -->
+<div class="mov" id="gImportMov">
+  <div class="msheet" style="max-height:88vh;">
+    <div class="mhandle"></div>
+    <button onclick="closeM('gImportMov')" style="position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text3);font-size:22px;">&#x2715;</button>
+    <div class="mtitle">Import from Goodreads</div>
+    <div class="msub">Bring all your ratings and reviews across</div>
+    <div id="gImportContent" style="margin-top:18px;"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -2600,10 +2611,250 @@ window.openSettings=()=>{
       <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;padding:14px 4px 4px;">Account</div>
       <button onclick="closeM('settingsMov');openTutorial()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#10067; Show tutorial again<span style="color:var(--text3);">&#8250;</span></button>
       <button onclick="closeM('settingsMov');shareProfile()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128279; Share my profile<span style="color:var(--text3);">&#8250;</span></button>
+      <button onclick="closeM('settingsMov');openGoodreadsImport()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128229; Import from Goodreads<span style="color:var(--text3);">&#8250;</span></button>
       <button onclick="if(confirm('Clear recommendation history?')){recDismissed=new Set();if(CU)setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:[],updatedAt:serverTimestamp()});showToast('Recommendations reset');closeM('settingsMov');}" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128260; Reset recommendations<span style="color:var(--text3);">&#8250;</span></button>
     </div>`;
   document.getElementById('settingsContent').innerHTML=html;
   document.getElementById('settingsMov').classList.add('open');
+};
+
+// ─────────────────────────────────────────────
+// GOODREADS CSV IMPORTER
+// ─────────────────────────────────────────────
+window.openGoodreadsImport=()=>{
+  if(!CU){openAuth();return;}
+  document.getElementById('gImportContent').innerHTML=gImportStep1Html();
+  document.getElementById('gImportMov').classList.add('open');
+};
+
+function gImportStep1Html(){
+  return `<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">Export your library from Goodreads, then upload the file here. Everything imports into your account under your name.</div>
+    <div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:10px;">How to export from Goodreads</div>
+      <ol style="padding-left:18px;font-size:12px;color:var(--text2);line-height:1.7;margin:0;">
+        <li>Sign in to goodreads.com on a desktop browser</li>
+        <li>Visit <span style="color:var(--tc);">goodreads.com/review/import</span></li>
+        <li>Click <strong>Export Library</strong> — it downloads a .csv file</li>
+        <li>Come back here and upload it below</li>
+      </ol>
+    </div>
+    <label style="display:block;background:var(--tc);color:var(--tc-dark);border-radius:14px;padding:14px;font-size:14px;font-weight:700;text-align:center;cursor:pointer;">
+      <input type="file" id="gImportFile" accept=".csv" onchange="onGoodreadsFile(this.files[0])" style="display:none;">
+      &#128193; Choose your Goodreads CSV
+    </label>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px;">Only your own data. Nothing shared until you decide.</div>`;
+}
+
+// Parse a single CSV line — handles quoted fields containing commas
+function parseCSVLine(line){
+  const result=[];
+  let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(inQ&&line[i+1]==='"'){cur+='"';i++;}
+      else inQ=!inQ;
+    }else if(ch===','&&!inQ){
+      result.push(cur);cur='';
+    }else{cur+=ch;}
+  }
+  result.push(cur);
+  return result;
+}
+
+window.onGoodreadsFile=async file=>{
+  if(!file)return;
+  const el=document.getElementById('gImportContent');
+  el.innerHTML='<div class="lmsg" style="padding:24px 0;"><div class="spin"></div>Reading your file...</div>';
+  try{
+    const text=await file.text();
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){el.innerHTML=gImportErrorHtml('That file looks empty.');return;}
+    const headers=parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
+    const idx={
+      title:headers.indexOf('title'),
+      author:headers.indexOf('author'),
+      isbn:headers.indexOf('isbn13'),
+      isbn10:headers.indexOf('isbn'),
+      rating:headers.indexOf('my rating'),
+      review:headers.indexOf('my review'),
+      shelves:headers.indexOf('exclusive shelf'),
+      dateRead:headers.indexOf('date read'),
+      dateAdded:headers.indexOf('date added'),
+    };
+    if(idx.title<0||idx.rating<0){el.innerHTML=gImportErrorHtml("This doesn't look like a Goodreads export. Make sure it's the CSV from goodreads.com/review/import.");return;}
+
+    // Parse all rows
+    const books=[];
+    for(let i=1;i<lines.length;i++){
+      const row=parseCSVLine(lines[i]);
+      if(!row[idx.title])continue;
+      const rating=parseFloat(row[idx.rating]||'0');
+      let isbn=(row[idx.isbn]||'').replace(/[="]/g,'').trim();
+      if(!isbn||isbn.length!==13)isbn=(row[idx.isbn10]||'').replace(/[="]/g,'').trim();
+      books.push({
+        title:row[idx.title]||'',
+        author:row[idx.author]||'',
+        isbn,
+        rating,
+        review:(row[idx.review]||'').replace(/<br\s*\/?>/gi,'\n').trim(),
+        shelf:(row[idx.shelves]||'').toLowerCase().trim(),
+        dateRead:row[idx.dateRead]||row[idx.dateAdded]||'',
+      });
+    }
+    const rated=books.filter(b=>b.rating>0);
+    const wantToRead=books.filter(b=>b.shelf==='to-read');
+    if(!rated.length&&!wantToRead.length){el.innerHTML=gImportErrorHtml('No rated books or to-read shelf items found in that file.');return;}
+
+    // Show preview + confirmation
+    el.innerHTML=gImportPreviewHtml(rated,wantToRead);
+    // Stash for confirm step
+    window._gImportRated=rated;
+    window._gImportWishlist=wantToRead;
+  }catch(e){
+    console.error(e);
+    el.innerHTML=gImportErrorHtml("Couldn't read that file. Make sure it's the CSV from Goodreads.");
+  }
+};
+
+function gImportErrorHtml(msg){
+  return `<div style="background:rgba(220,80,60,0.08);border:0.5px solid rgba(220,80,60,0.3);border-radius:12px;padding:14px;color:var(--text);font-size:13px;line-height:1.5;margin-bottom:14px;">&#9888;&#65039; ${esc(msg)}</div>
+    <button onclick="openGoodreadsImport()" style="width:100%;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">Try again</button>`;
+}
+
+function gImportPreviewHtml(rated,wishlist){
+  const sample=rated.slice(0,4);
+  const sampleHtml=sample.map(b=>{
+    let stars='';for(let i=0;i<Math.round(b.rating);i++)stars+='&#9733;';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px;">
+      <div style="flex:1;min-width:0;"><div style="color:var(--text);">${esc(b.title)}</div><div style="color:var(--text3);font-size:11px;">${esc(b.author)}</div></div>
+      <div style="color:var(--star);">${stars} <span style="color:var(--text3);">${b.rating}</span></div>
+    </div>`;
+  }).join('');
+
+  return `<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:14px;">
+    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:10px;">Found in your file</div>
+    <div style="display:flex;gap:12px;margin-bottom:14px;">
+      <div style="flex:1;background:var(--bg2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--tc);font-family:'DM Serif Display',serif;">${rated.length}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Ratings &amp; reviews</div></div>
+      <div style="flex:1;background:var(--bg2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--text);font-family:'DM Serif Display',serif;">${wishlist.length}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Wishlist</div></div>
+    </div>
+    ${sample.length?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Sample:</div>${sampleHtml}`:''}
+  </div>
+  <div style="font-size:12px;color:var(--text3);line-height:1.5;margin-bottom:14px;">Books with an ISBN get matched to a cover automatically. Anything without an ISBN still imports as your rating and review — the cover may just be a placeholder.</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <button onclick="confirmGoodreadsImport(true,true)" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;">Import everything (${rated.length+wishlist.length})</button>
+    ${rated.length?`<button onclick="confirmGoodreadsImport(true,false)" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">Just ratings &amp; reviews (${rated.length})</button>`:''}
+    ${wishlist.length?`<button onclick="confirmGoodreadsImport(false,true)" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">Just wishlist (${wishlist.length})</button>`:''}
+  </div>`;
+}
+
+window.confirmGoodreadsImport=async(doRated,doWishlist)=>{
+  const el=document.getElementById('gImportContent');
+  const rated=window._gImportRated||[];
+  const wishlist=window._gImportWishlist||[];
+  const totalSteps=(doRated?rated.length:0)+(doWishlist?wishlist.length:0);
+  let done=0,skipped=0,errors=0;
+
+  function updateProgress(){
+    const pct=Math.round((done/Math.max(totalSteps,1))*100);
+    el.innerHTML=`<div style="text-align:center;padding:24px 12px;">
+      <div style="font-size:14px;color:var(--text);margin-bottom:14px;">Importing your library...</div>
+      <div style="height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;margin-bottom:10px;"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--tc),#85B7EB);transition:width 0.3s;"></div></div>
+      <div style="font-size:12px;color:var(--text3);">${done} of ${totalSteps} done${errors?' &#183; '+errors+' skipped':''}</div>
+    </div>`;
+  }
+  updateProgress();
+
+  const myName=CU.displayName||CU.email.split('@')[0];
+  const myNameLower=myName.toLowerCase();
+
+  // Import ratings
+  if(doRated){
+    for(const b of rated){
+      try{
+        const bookId=b.isbn||('gr_'+b.title.substring(0,40).replace(/[^a-z0-9]/gi,'_'));
+        const cover=b.isbn?olc(b.isbn,'M'):'';
+        // Check if this user already rated this book — don't overwrite
+        const existing=await getDoc(doc(db,'ratings',CU.uid+'_'+bookId));
+        if(existing.exists()){skipped++;done++;updateProgress();continue;}
+        // Convert Goodreads date to timestamp if possible
+        let ts=serverTimestamp();
+        if(b.dateRead){
+          const d=new Date(b.dateRead);
+          if(!isNaN(d))ts=d;
+        }
+        await setDoc(doc(db,'ratings',CU.uid+'_'+bookId),{
+          userId:CU.uid,
+          userName:myName,
+          userNameLower:myNameLower,
+          bookId,
+          bookTitle:b.title,
+          bookCover:cover,
+          bookIsbn:b.isbn||'',
+          bookAuthor:b.author,
+          rating:b.rating,
+          review:b.review||'',
+          privacy:'public',
+          timestamp:ts,
+          likes:0,
+          dislikes:0,
+          source:'goodreads',
+        });
+        // Update book aggregate
+        try{
+          const bRef=doc(db,'books',bookId);
+          const bSnap=await getDoc(bRef);
+          if(bSnap.exists()){
+            const d=bSnap.data();
+            const newCount=(d.ratingCount||0)+1;
+            const newTotal=(d.ratingTotal||0)+b.rating;
+            await setDoc(bRef,{title:b.title,authors:[b.author],cover,isbn:b.isbn||'',ratingCount:newCount,ratingTotal:newTotal,avgRating:+(newTotal/newCount).toFixed(2)},{merge:true});
+          }else{
+            await setDoc(bRef,{title:b.title,authors:[b.author],cover,isbn:b.isbn||'',ratingCount:1,ratingTotal:b.rating,avgRating:b.rating});
+          }
+        }catch(e){}
+        done++;
+      }catch(e){console.error('Import error:',e,b.title);errors++;done++;}
+      if(done%5===0)updateProgress();
+    }
+  }
+
+  // Import wishlist
+  if(doWishlist){
+    for(const b of wishlist){
+      try{
+        const bookId=b.isbn||('gr_'+b.title.substring(0,40).replace(/[^a-z0-9]/gi,'_'));
+        // Skip if already in wishlist
+        if(wl.find(w=>w.bookId===bookId||(w.isbn&&w.isbn===b.isbn))){skipped++;done++;updateProgress();continue;}
+        const cover=b.isbn?olc(b.isbn,'M'):'';
+        const wlDocId=CU.uid+'_'+bookId;
+        await setDoc(doc(db,'wishlist',wlDocId),{
+          userId:CU.uid,
+          bookId,
+          title:b.title,
+          authors:[b.author],
+          cover,
+          isbn:b.isbn||'',
+          addedAt:serverTimestamp(),
+          source:'goodreads',
+        });
+        done++;
+      }catch(e){errors++;done++;}
+      if(done%5===0)updateProgress();
+    }
+  }
+
+  updateProgress();
+
+  // Show success screen
+  el.innerHTML=`<div style="text-align:center;padding:20px 12px;">
+    <div style="font-size:48px;margin-bottom:12px;">&#127881;</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);margin-bottom:8px;">Done!</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;">
+      ${done-skipped-errors} new item${(done-skipped-errors)!==1?'s':''} imported${skipped?', '+skipped+' already in your library':''}${errors?', '+errors+' could not be read':''}.
+    </div>
+    <button onclick="closeM('gImportMov');loadWL();SS('profile');showToast('Library imported!')" style="background:var(--tc);color:var(--tc-dark);border:none;border-radius:14px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;">View your library</button>
+  </div>`;
 };
 
 loadHome();
