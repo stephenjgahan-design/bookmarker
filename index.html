@@ -466,23 +466,26 @@ img{display:block;}
     <div class="logo">book<em>marker</em></div>
     <button onclick="openAddFriend()" style="background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:12px;padding:7px 12px;color:var(--tc);font-size:12px;font-weight:600;position:relative;transition:background 0.15s;">+ Add friend</button>
   </div>
-  <div style="display:flex;border-bottom:0.5px solid var(--border);padding:0 18px;">
-    <button id="frTab-friends" onclick="switchFriendsTab('friends')" style="flex:1;background:none;border:none;border-bottom:2px solid var(--tc);padding:10px 0;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:color 0.2s;">Friends</button>
-    <button id="frTab-tables" onclick="switchFriendsTab('tables')" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 0;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:color 0.2s;">Tables</button>
+  <div style="display:flex;border-bottom:0.5px solid var(--border);padding:0 18px;flex-shrink:0;">
+    <button id="frTab-friends" onclick="switchFriendsTab('friends')" style="flex:1;background:none;border:none;border-bottom:2px solid var(--tc);padding:10px 0;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all 0.2s;">Friends</button>
+    <button id="frTab-tables" onclick="switchFriendsTab('tables')" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 0;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:all 0.2s;">Tables</button>
   </div>
   <div class="sa" id="friendsContent"><div class="lmsg"><div class="spin"></div>Loading friends...</div></div>
-  <div class="sa" id="tablesContent" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:50px 24px;min-height:60vh;">
-    <div style="position:relative;width:100%;max-width:340px;text-align:center;" class="anim-fade-up">
-      <div style="position:absolute;width:180px;height:180px;background:var(--tc);border-radius:50%;filter:blur(80px);opacity:0.2;top:0;left:50%;transform:translateX(-50%);z-index:0;"></div>
-      <div style="position:relative;z-index:1;">
-        <div style="display:inline-block;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:20px;padding:5px 14px;color:var(--tc);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">Coming Soon</div>
-        <div style="font-size:56px;margin-bottom:16px;">&#127942;</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);line-height:1.2;margin-bottom:12px;">Tables</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px;">Compare your reading stats with friends. See who's read the most, who rates hardest, and who shares your taste.</div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left;">
-          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128202;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Friend leaderboards</div><div style="font-size:11px;color:var(--text3);">Who's read the most this month?</div></div></div>
-          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#129309;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Taste matching</div><div style="font-size:11px;color:var(--text3);">See how similar your ratings are</div></div></div>
-          <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128200;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Reading streaks</div><div style="font-size:11px;color:var(--text3);">Track your reading momentum</div></div></div>
+  <div class="sa" id="tablesContent" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 24px;min-height:60vh;">
+      <div style="position:relative;width:100%;max-width:340px;text-align:center;" class="anim-fade-up">
+        <div style="position:absolute;width:200px;height:200px;background:var(--tc);border-radius:50%;filter:blur(80px);opacity:0.2;top:0;left:50%;transform:translateX(-50%);z-index:0;"></div>
+        <div style="position:absolute;width:140px;height:140px;background:#85B7EB;border-radius:50%;filter:blur(70px);opacity:0.18;bottom:20%;right:-10%;z-index:0;"></div>
+        <div style="position:relative;z-index:1;">
+          <div style="display:inline-block;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:20px;padding:5px 14px;color:var(--tc);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">Coming Soon</div>
+          <div style="font-size:56px;margin-bottom:16px;">&#127942;</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);line-height:1.2;margin-bottom:12px;">Tables</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px;">See how you stack up against your friends — ratings, streaks, taste matches and more, all in one place.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:0;text-align:left;">
+            <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128202;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Friend leaderboards</div><div style="font-size:11px;color:var(--text3);">Who's read the most this month?</div></div></div>
+            <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#129309;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Taste matching</div><div style="font-size:11px;color:var(--text3);">See how similar your taste is to a friend's</div></div></div>
+            <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;"><div style="font-size:20px;">&#128200;</div><div><div style="font-size:13px;color:var(--text);font-weight:500;">Reading streaks</div><div style="font-size:11px;color:var(--text3);">Track your reading momentum over time</div></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1890,13 +1893,11 @@ window.switchFriendsTab=function(tab){
   const ftb=document.getElementById('frTab-friends');
   const ttb=document.getElementById('frTab-tables');
   if(tab==='tables'){
-    fc.style.display='none';
-    tc.style.display='flex';
+    fc.style.display='none';tc.style.display='';
     ftb.style.borderBottomColor='transparent';ftb.style.color='var(--text3)';ftb.style.fontWeight='500';
     ttb.style.borderBottomColor='var(--tc)';ttb.style.color='var(--text)';ttb.style.fontWeight='600';
   }else{
-    fc.style.display='';
-    tc.style.display='none';
+    fc.style.display='';tc.style.display='none';
     ftb.style.borderBottomColor='var(--tc)';ftb.style.color='var(--text)';ftb.style.fontWeight='600';
     ttb.style.borderBottomColor='transparent';ttb.style.color='var(--text3)';ttb.style.fontWeight='500';
   }
@@ -2758,12 +2759,18 @@ window.sendRecommendWithMessage=async()=>{
 // FIRST-RUN TUTORIAL
 // ─────────────────────────────────────────────
 const TUTORIAL_STEPS=[
-  {ic:'📚',title:'Welcome to Bookmarker',body:'A social home for everything you read. Rate books, write reviews, follow friends, and find your next favourite.'},
-  {ic:'🔍',title:'Find any book',body:'Tap the Search tab to find millions of books. Or browse the Shelf for trending picks across genres.'},
-  {ic:'⭐',title:'Rate and review',body:'Tap a book to open it, then tap Rate. Half-star ratings, optional review, public or private — your call.'},
-  {ic:'❤️',title:'Build your Top 5',body:'On your profile, fill your Top 5 favourite books. Friends see these on your banner.'},
-  {ic:'👥',title:'Connect with friends',body:'Search by name in the Friends tab to send requests. Once connected, see what they\'re reading and recommend books to each other.'},
-  {ic:'📖',title:'Open your Diary',body:'After a few ratings, your Diary unlocks — your reading personality, favourite themes, and a timeline of every book.'},
+  {ic:'📚',title:'Welcome to Bookmarker!',body:'Your new home for every book you read. Rate, review, track what you\'re reading, and share it all with friends. Here\'s a quick tour!'},
+  {ic:'🔍',title:'Find any book',body:'Tap <b>Search</b> to look up millions of books instantly. Or hang out on the <b>Shelf</b> tab to browse trending picks by genre — crime, sci-fi, romance, horror and more.'},
+  {ic:'⭐',title:'Rate & review',body:'Tap any book, then hit <b>Rate this book</b>. You can do half-star ratings, write a review, and choose whether it\'s public (friends can see it) or private (just for you).'},
+  {ic:'📖',title:'Track what you\'re reading',body:'On your <b>Profile</b>, there\'s a "Currently reading" section. Add up to 2 books at a time. When you finish one, you\'ll be prompted to rate it right away.'},
+  {ic:'🏆',title:'Your Top 5',body:'Pick your 5 all-time favourite books on your profile. Friends can see your top 5 on your card — it\'s a great conversation starter!'},
+  {ic:'🎯',title:'Earn badges & tiers',body:'The more you rate, the higher your tier — Bronze → Silver → Gold → Diamond → Platinum. Unlock achievements along the way and show them off on your profile.'},
+  {ic:'📓',title:'Your Reading Diary',body:'After you\'ve rated a few books, your <b>Diary</b> unlocks. It shows your reading personality, your favourite themes, mood scores, and a full timeline of every book you\'ve ever rated.'},
+  {ic:'❤️',title:'Wishlist',body:'See a book you want to read later? Tap the <b>+</b> button on any book to add it to your wishlist. Find it anytime under your profile.'},
+  {ic:'👥',title:'Friends & recommendations',body:'Go to the <b>Friends</b> tab and tap <b>+ Add friend</b> to find people. Once you\'re connected, you can see their ratings, what they\'re reading, and send them book recommendations.'},
+  {ic:'📚',title:'Read Together & Book Clubs',body:'On a friend\'s profile, tap <b>Read Together</b> to kick off a shared read. <b>Book Clubs</b> with group chats and reading schedules are coming soon too!'},
+  {ic:'🔥',title:'Browse by mood & theme',body:'On the Shelf, scroll down to <b>Browse by mood</b>. Pick a theme like Revenge, Survival, or Coming of Age and discover books that match exactly how you\'re feeling.'},
+  {ic:'🎉',title:'You\'re all set!',body:'That\'s everything! Start by rating a book you\'ve already read — it only takes a few seconds. The more you rate, the smarter your recommendations get. Happy reading!'},
 ];
 
 window.openTutorial=()=>{
