@@ -1068,8 +1068,10 @@ onAuthStateChanged(auth,async u=>{
     loadWL();
     loadTop5();
     loadReading();
-    loadRecDismissed();
+    await loadRecDismissed();
     checkFriendReqs();
+    // Now that dismissed list is loaded, refresh recs row so dismissed books don't show
+    refreshRecsRow();
     if(document.getElementById('S-profile').classList.contains('active'))renderProfile();
   }
 });
@@ -1163,8 +1165,8 @@ window.recWL=async(key,isbn)=>{
   const bookObj={title:b.t||b.title,authors:[b.a||b.author||''],isbn:b.isbn||isbn||'',cover:olc(b.isbn||isbn,'M')};
   const id=bid(bookObj);
   const titleKey=bookObj.title;
-  // Always dismiss first so it never comes back
-  dismissRec(bookObj.isbn||isbn,titleKey);
+  // Always dismiss permanently first — prevents reappearing on refresh
+  await dismissRec(bookObj.isbn||isbn,bookObj.title);
   if(wl.find(w=>w.bookId===id)){showToast('Already in wishlist');return;}
   try{
     const en={userId:CU.uid,bookId:id,title:bookObj.title,authors:bookObj.authors,cover:bookObj.cover,isbn:bookObj.isbn||'',addedAt:serverTimestamp()};
@@ -1901,8 +1903,9 @@ async function loadHome(){
     moodEl.innerHTML=THEMES.map(t=>'<div onclick="openTheme(\''+t.id+'\')" style="flex-shrink:0;background:'+t.gradient+';border-radius:12px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:transform 0.15s;" onmousedown="this.style.transform=\'scale(0.96)\'" onmouseup="this.style.transform=\'\'"><span style="font-size:14px;">'+t.ic+'</span><span style="font-size:11px;color:#fff;font-weight:600;">'+t.label+'</span></div>').join('');
   }
 
-  // Build recommendations row if user is signed in
-  if(CU){
+  // Recs are built after auth loads dismissed list (see onAuthStateChanged)
+  // This ensures dismissed books never reappear on refresh
+  if(CU&&recDismissed.size>0){
     buildRecommendations().then(recs=>{
       if(!recs.length)return;
       const el=document.getElementById('recsRow');
@@ -1910,7 +1913,7 @@ async function loadHome(){
       const html='<div class="stitle" style="padding:0;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span>Because you liked</span><span style="font-size:9px;background:rgba(93,202,165,0.18);color:var(--tc);border-radius:6px;padding:1px 6px;font-weight:700;">FOR YOU</span></div><div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">'+recs.map((b,i)=>{
         const key='rec'+i+'_'+Date.now();
         _bookStore[key]={title:b.t,authors:[b.a],author:b.a,isbn:b.isbn,cover:olc(b.isbn,'M'),description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
-        return '<div style="flex-shrink:0;width:96px;" id="rec_card_'+key+'"><div style="cursor:pointer;" onclick="_ob(\''+key+'\')"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=\''+grad(b.t)+'\';this.removeAttribute(\'src\')" style="width:96px;height:144px;border-radius:9px;object-fit:cover;display:block;margin-bottom:5px;"></div><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px;">'+esc(b.t)+'</div><div style="display:flex;gap:4px;"><button onclick="recWL(\''+key+'\',\''+b.isbn+'\');document.getElementById(\'rec_card_'+key+'\').style.display=\'none\'" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:7px;padding:4px 0;font-size:10px;color:var(--tc);cursor:pointer;">+ WL</button><button onclick="dismissRec(\''+b.isbn+'\');document.getElementById(\'rec_card_'+key+'\').style.display=\'none\'" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:7px;padding:4px 0;font-size:10px;color:var(--text3);cursor:pointer;">&#215;</button></div></div>';
+        return '<div style="flex-shrink:0;width:96px;" id="rec_card_'+key+'"><div style="cursor:pointer;" onclick="_ob(\''+key+'\')"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=\''+grad(b.t)+'\';this.removeAttribute(\'src\')" style="width:96px;height:144px;border-radius:9px;object-fit:cover;display:block;margin-bottom:5px;"></div><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px;">'+esc(b.t)+'</div><div style="display:flex;gap:4px;"><button onclick="recWL(\''+key+'\',\''+b.isbn+'\');refreshRecsRow()" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:7px;padding:4px 0;font-size:10px;color:var(--tc);cursor:pointer;">+ WL</button><button onclick="dismissRec(\''+b.isbn+'\',\''+b.t+'\').then(()=>refreshRecsRow())" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:7px;padding:4px 0;font-size:10px;color:var(--text3);cursor:pointer;">&#215;</button></div></div>';
       }).join('')+'</div>';
       el.innerHTML=html;
       el.style.display='block';
@@ -2573,7 +2576,7 @@ async function refreshRecsRow(){
   const html='<div class="stitle" style="padding:0;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span>Because you liked</span><span style="font-size:9px;background:rgba(93,202,165,0.18);color:var(--tc);border-radius:6px;padding:1px 6px;font-weight:700;">FOR YOU</span></div><div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">'+recs.map((b,i)=>{
     const key='rec'+i+'_'+Date.now();
     _bookStore[key]={title:b.t,authors:[b.a],author:b.a,isbn:b.isbn,cover:olc(b.isbn,'M'),description:'',categories:[],publishedDate:'',previewLink:'',rating:0,ratingCount:''};
-    return '<div style="flex-shrink:0;width:96px;" id="rec_card_'+key+'"><div style="cursor:pointer;" onclick="_ob(\''+key+'\')"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=\''+grad(b.t)+'\';this.removeAttribute(\'src\')" style="width:96px;height:144px;border-radius:9px;object-fit:cover;display:block;margin-bottom:5px;"></div><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px;">'+esc(b.t)+'</div><div style="display:flex;gap:4px;"><button onclick="recWL(\''+key+'\',\''+b.isbn+'\');document.getElementById(\'rec_card_'+key+'\').style.display=\'none\'" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:7px;padding:4px 0;font-size:10px;color:var(--tc);cursor:pointer;">+ WL</button><button onclick="dismissRec(\''+b.isbn+'\');document.getElementById(\'rec_card_'+key+'\').style.display=\'none\'" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:7px;padding:4px 0;font-size:10px;color:var(--text3);cursor:pointer;">&#215;</button></div></div>';
+    return '<div style="flex-shrink:0;width:96px;" id="rec_card_'+key+'"><div style="cursor:pointer;" onclick="_ob(\''+key+'\')"><img src="'+olc(b.isbn,'M')+'" onerror="this.style.background=\''+grad(b.t)+'\';this.removeAttribute(\'src\')" style="width:96px;height:144px;border-radius:9px;object-fit:cover;display:block;margin-bottom:5px;"></div><div style="font-size:11px;color:var(--text2);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px;">'+esc(b.t)+'</div><div style="display:flex;gap:4px;"><button onclick="recWL(\''+key+'\',\''+b.isbn+'\');refreshRecsRow()" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:7px;padding:4px 0;font-size:10px;color:var(--tc);cursor:pointer;">+ WL</button><button onclick="dismissRec(\''+b.isbn+'\',\''+b.t+'\').then(()=>refreshRecsRow())" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:7px;padding:4px 0;font-size:10px;color:var(--text3);cursor:pointer;">&#215;</button></div></div>';
   }).join('')+'</div>';
   el.innerHTML=html;
   el.style.display='block';
