@@ -6,7 +6,7 @@
 <title>Bookmarker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#08090d;--bg2:#0f1117;--bg3:#161820;--bg4:#1c1f2a;--border:rgba(255,255,255,0.06);--text:#f2f2f4;--text2:#8a8a9a;--text3:#44455a;--star:#f0c040;}
+:root{--tc:#5DCAA5;--tc-dark:#0a2a20;--bg:#000000;--bg2:#0a0a0a;--bg3:#111114;--bg4:#18181c;--border:rgba(255,255,255,0.07);--text:#f2f2f4;--text2:#8a8a9a;--text3:#44455a;--star:#f0c040;}
 :root.light{
   --bg:#f7f7fa;
   --bg2:#ffffff;
@@ -20,11 +20,14 @@
 }
 /* LIGHT MODE — fix the dark hardcoded bits */
 :root.light body{background:var(--bg);color:var(--text);}
-:root.light .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(4,5,8,0.99);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border-top:0.5px solid rgba(255,255,255,0.08);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100;}
+:root.light .bnav{background:rgba(255,255,255,0.95);border-top:0.5px solid var(--border);}
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#000000;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border-top:0.5px solid rgba(255,255,255,0.08);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100;}
 :root.light .nb{color:var(--text3);}
 :root.light .nb.on{color:var(--tc);}
-:root.light .tbar{padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(5,6,10,0.97);backdrop-filter:blur(28px);z-index:50;border-bottom:0.5px solid rgba(255,255,255,0.07);}
-:root.light .backbar{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,0.97);backdrop-filter:blur(28px);border-bottom:0.5px solid rgba(255,255,255,0.07);}
+:root.light .tbar{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);}
+.tbar{padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(0,0,0,0.98);backdrop-filter:blur(28px);z-index:50;border-bottom:0.5px solid rgba(255,255,255,0.07);}
+:root.light .backbar{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);}
+.backbar{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.98);backdrop-filter:blur(28px);border-bottom:0.5px solid rgba(255,255,255,0.07);}
 :root.light .backleft{color:var(--text2);}
 :root.light .sib{background:var(--bg2);border:1px solid var(--border);}
 :root.light .sib input{color:var(--text);}
@@ -1993,7 +1996,7 @@ async function renderFriends(){
           const key='inc'+i+'_'+Date.now();
           _bookStore[key]={title:r.bookTitle,authors:[r.bookAuthor||''],author:r.bookAuthor||'',isbn:r.bookId||'',cover:r.bookCover||'',description:'',categories:[],publishedDate:'',previewLink:''};
           const msgHtml=r.message?'<div style="font-size:11px;color:var(--text2);margin-top:6px;font-style:italic;background:rgba(93,202,165,0.06);border-left:2px solid var(--tc);padding:5px 8px;border-radius:0 6px 6px 0;">&#8220;'+esc(r.message)+'&#8221;</div>':'';
-          html+='<div style="display:flex;gap:12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" style="width:46px;height:69px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')">':'<div style="width:46px;height:69px;border-radius:6px;background:'+grad(r.bookTitle)+';flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:600;">'+esc(r.bookTitle)+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">'+esc(r.bookAuthor||'')+'</div><div style="font-size:11px;color:var(--tc);margin-top:5px;">'+esc(r.fromName)+' recommended this</div>'+msgHtml+'</div></div>';
+          html+='<div id="inc_card_'+key+'" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;"><div style="display:flex;gap:12px;cursor:pointer;" onclick="_ob(\''+key+'\')">'+(r.bookCover?'<img src="'+r.bookCover+'" style="width:46px;height:69px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.background=\''+grad(r.bookTitle)+'\';this.removeAttribute(\'src\')">':'<div style="width:46px;height:69px;border-radius:6px;background:'+grad(r.bookTitle)+';flex-shrink:0;"></div>')+'<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text);font-weight:600;">'+esc(r.bookTitle)+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">'+esc(r.bookAuthor||'')+'</div><div style="font-size:11px;color:var(--tc);margin-top:5px;">'+esc(r.fromName)+' recommended this</div>'+msgHtml+'</div></div><div style="display:flex;gap:8px;margin-top:10px;"><button onclick="recWL(\''+key+'\',\''+r.bookId+'\');document.getElementById(\'inc_card_'+key+'\').style.display=\'none\'" style="flex:1;background:rgba(93,202,165,0.12);border:0.5px solid var(--tc);border-radius:10px;padding:8px;font-size:12px;font-weight:600;color:var(--tc);cursor:pointer;">&#128278; Add to wishlist</button><button onclick="_ob(\''+key+'\');document.getElementById(\'inc_card_'+key+'\').style.display=\'none\'" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--text3);cursor:pointer;">View</button></div></div>';
         });
         html+='</div>';
       }
