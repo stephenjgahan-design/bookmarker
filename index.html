@@ -1029,6 +1029,11 @@ let CU=null,wl=[],frCache=[],lastItems=[],searchT=null,userSearchT=null,_bookSto
       if(!document.documentElement.classList.contains('light'))document.documentElement.style.setProperty('--tc-dark',darks[savedTC]||'#001a10');
     }
   }catch(e){}
+  // Load dismissed recs from localStorage immediately so they're ready before recs build
+  try{
+    const local=JSON.parse(localStorage.getItem('bm_dismissed')||'[]');
+    if(local.length)recDismissed=new Set(local);
+  }catch(e){}
 })();
 
 // HELPERS
@@ -1151,11 +1156,22 @@ async function loadTop5(){
 }
 
 async function loadRecDismissed(){
-  if(!CU)return;
+  // Load from localStorage first — instant, always available
   try{
-    const snap=await getDoc(doc(db,'recDismiss',CU.uid));
-    recDismissed=new Set(snap.exists()?(snap.data().bookIds||[]):[]);
+    const local=JSON.parse(localStorage.getItem('bm_dismissed')||'[]');
+    recDismissed=new Set(local);
   }catch(e){recDismissed=new Set();}
+  // Merge with Firestore data if signed in
+  if(CU){
+    try{
+      const snap=await getDoc(doc(db,'recDismiss',CU.uid));
+      if(snap.exists()){
+        (snap.data().bookIds||[]).forEach(id=>recDismissed.add(id));
+      }
+      // Sync merged set back to both stores
+      try{localStorage.setItem('bm_dismissed',JSON.stringify(Array.from(recDismissed)));}catch(e){}
+    }catch(e){}
+  }
 }
 // Add to wishlist from recommendation row
 window.recWL=async(key,isbn)=>{
@@ -1177,14 +1193,16 @@ window.recWL=async(key,isbn)=>{
 };
 
 async function dismissRec(isbn,titleFallback){
-  if(!CU)return;
   // Store BOTH isbn and title so matching always works
   const keys=[];
   if(isbn&&isbn.length>3)keys.push(isbn);
   if(titleFallback&&titleFallback.length>1)keys.push(titleFallback);
   if(!keys.length)return;
   keys.forEach(k=>recDismissed.add(k));
-  try{await setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:Array.from(recDismissed),updatedAt:serverTimestamp()});}catch(e){console.error('dismiss save failed',e);}
+  // Save to localStorage immediately — this is the primary store, never fails
+  try{localStorage.setItem('bm_dismissed',JSON.stringify(Array.from(recDismissed)));}catch(e){}
+  // Also save to Firestore as backup
+  if(CU){try{await setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:Array.from(recDismissed),updatedAt:serverTimestamp()});}catch(e){}}
 }
 
 async function loadReading(){
@@ -2886,7 +2904,7 @@ window.openSettings=()=>{
       <button onclick="closeM('settingsMov');openTutorial()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#10067; Show tutorial again<span style="color:var(--text3);">&#8250;</span></button>
       <button onclick="closeM('settingsMov');shareProfile()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128279; Share my profile<span style="color:var(--text3);">&#8250;</span></button>
       <button onclick="closeM('settingsMov');openGoodreadsImport()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128229; Import from Goodreads<span style="color:var(--text3);">&#8250;</span></button>
-      <button onclick="if(confirm('Clear recommendation history?')){recDismissed=new Set();if(CU)setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:[],updatedAt:serverTimestamp()});showToast('Recommendations reset');closeM('settingsMov');}" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128260; Reset recommendations<span style="color:var(--text3);">&#8250;</span></button>
+      <button onclick="if(confirm('Clear recommendation history?')){recDismissed=new Set();try{localStorage.removeItem('bm_dismissed');}catch(e){}if(CU)setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:[],updatedAt:serverTimestamp()});showToast('Recommendations reset');closeM('settingsMov');}" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">&#128260; Reset recommendations<span style="color:var(--text3);">&#8250;</span></button>
     </div>`;
   document.getElementById('settingsContent').innerHTML=html;
   document.getElementById('settingsMov').classList.add('open');
