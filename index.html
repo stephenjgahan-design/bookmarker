@@ -1162,19 +1162,23 @@ window.recWL=async(key,isbn)=>{
   if(!CU){openAuth();return;}
   const bookObj={title:b.t||b.title,authors:[b.a||b.author||''],isbn:b.isbn||isbn||'',cover:olc(b.isbn||isbn,'M')};
   const id=bid(bookObj);
+  const titleKey=bookObj.title;
+  // Always dismiss first so it never comes back
+  dismissRec(bookObj.isbn||isbn,titleKey);
   if(wl.find(w=>w.bookId===id)){showToast('Already in wishlist');return;}
   try{
     const en={userId:CU.uid,bookId:id,title:bookObj.title,authors:bookObj.authors,cover:bookObj.cover,isbn:bookObj.isbn||'',addedAt:serverTimestamp()};
     await addDoc(collection(db,'wishlist'),en);
     wl.push(en);
     showToast('\u{1F516} Added to wishlist!');
-    if(isbn)dismissRec(isbn);
   }catch(e){showToast('Try again');}
 };
 
-async function dismissRec(isbn){
-  if(!CU||!isbn)return;
-  recDismissed.add(isbn);
+async function dismissRec(isbn,titleFallback){
+  if(!CU)return;
+  const key=isbn||titleFallback||'';
+  if(!key)return;
+  recDismissed.add(key);
   try{await setDoc(doc(db,'recDismiss',CU.uid),{userId:CU.uid,bookIds:Array.from(recDismissed),updatedAt:serverTimestamp()});}catch(e){}
 }
 
@@ -1217,13 +1221,16 @@ window.addCurrentBookToReading=async()=>{
     showToast('Currently reading is full — finish one first');
     return;
   }
-  reading.push({
+  const newBook={
     title:currentBook.title,
     author:(currentBook.authors||[''])[0]||'',
     isbn:currentBook.isbn||'',
     cover:currentBook.cover||'',
     startedAt:Date.now(),
-  });
+  };
+  reading.push(newBook);
+  // Dismiss from recommendations permanently
+  dismissRec(currentBook.isbn,currentBook.title);
   await saveReading();
   showToast('Added to currently reading!');
   // Update the button on the book page
@@ -2591,14 +2598,19 @@ async function buildRecommendations(){
     });
     const topThemes=Object.entries(themeCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(t=>t[0]);
     // Filter: rated + wishlisted + dismissed
-    const skipIsbns=new Set([...ratings.map(r=>r.bookId),...wl.map(w=>w.bookId||w.isbn),...recDismissed]);
+    const readingIsbns=reading.filter(b=>b).map(b=>b.isbn||b.title||'').filter(Boolean);
+    const skipIsbns=new Set([...ratings.map(r=>r.bookId),...wl.map(w=>w.bookId||w.isbn),...recDismissed,...readingIsbns]);
     const recs=[];
     topThemes.forEach(tid=>{
       THEME_TO_BOOKS[tid].forEach(isbn=>{
         if(skipIsbns.has(isbn))return;
         Object.values(GENRE_BOOKS).forEach(list=>{
           const found=list.find(b=>b.isbn===isbn);
-          if(found&&!recs.find(r=>r.isbn===isbn))recs.push(found);
+          if(found&&!recs.find(r=>r.isbn===isbn)){
+            // Also skip if dismissed by title
+            if(recDismissed.has(found.t))return;
+            recs.push(found);
+          }
         });
       });
     });
